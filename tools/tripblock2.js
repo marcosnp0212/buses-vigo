@@ -1,6 +1,6 @@
 // ---------- trip logic ----------
 const tripRoute = line => routesOfLine(line).filter(r => r.stopById.has(prefs.origin) && r.stopById.has(prefs.dest) && r.stopById.get(prefs.dest).d > r.stopById.get(prefs.origin).d).sort((a, b) => b.main - a.main || b.rank - a.rank)[0];
-const hhmm = d => d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+const HHMM = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }), hhmm = d => HHMM.format(d);
 // ---- official timetable (GTFS): patterns of stops with minute offsets, trips with start minute and service dates ----
 const SVC = SCHED.dates.map(d => new Set(d));
 const STOPIDX = new Map(), TRIPS_BY_PAT = SCHED.patterns.map(() => []);
