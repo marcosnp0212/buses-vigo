@@ -6,6 +6,9 @@ Mapa en tiempo real de los autobuses urbanos de Vigo (Vitrasa).
 - Al pulsar una parada, solo aparecen los buses que van a ella: dónde están, su recorrido hasta la parada y a qué hora llegan.
 - Tu trayecto guardado (dónde subes y dónde bajas), con retraso respecto al horario y aviso cuando falten 5 minutos.
 - Tema claro, oscuro o automático.
+- En gallego.
+- Enlaces directos a una parada (`?parada=6620`) para compartir o guardar.
+- Avisos con la web cerrada, si se publica el servidor de avisos: ver [`push/README.md`](push/README.md).
 
 ## Datos
 

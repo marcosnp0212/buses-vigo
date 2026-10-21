@@ -1,6 +1,6 @@
 // ---------- trip logic ----------
 const tripRoute = line => routesOfLine(line).filter(r => r.stopById.has(prefs.origin) && r.stopById.has(prefs.dest) && r.stopById.get(prefs.dest).d > r.stopById.get(prefs.origin).d).sort((a, b) => b.main - a.main || b.rank - a.rank)[0];
-const HHMM = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }), hhmm = d => HHMM.format(d);
+const HHMM = new Intl.DateTimeFormat('gl-ES', { hour: '2-digit', minute: '2-digit' }), hhmm = d => HHMM.format(d);
 // ---- official timetable (GTFS): patterns of stops with minute offsets, trips with start minute and service dates ----
 const SVC = SCHED.dates.map(d => new Set(d));
 const STOPIDX = new Map(), TRIPS_BY_PAT = SCHED.patterns.map(() => []);
@@ -95,21 +95,21 @@ function trips() {
   }
   return out.sort((a, b) => (b.reaches - a.reaches) || (a.min - b.min));
 }
-let heroBus = null;
+let heroBus = null, heroTrip = null;   // the bus shown big for the trip, and its departure
 function stateBadge(t) {
-  if (t.kind === 'sched') return `<span class="state">Según horario</span>`;
+  if (t.kind === 'sched') return `<span class="state">Segundo o horario</span>`;
   const d = t.delay; if (!d) return '';
   if (d.diff >= 2) return `<span class="state late">${d.diff} min tarde</span>`;
-  if (d.diff <= -2) return `<span class="state early">${-d.diff} min adelantado</span>`;
-  return `<span class="state ok">A su hora</span>`;
+  if (d.diff <= -2) return `<span class="state early">${-d.diff} min adiantado</span>`;
+  return `<span class="state ok">Á súa hora</span>`;
 }
 function renderHero() {
   const el = document.getElementById('hero');
-  if (!hasTrip()) { heroBus = null; return; }
-  const T = trips();
-  if (T === null) { el.innerHTML = results.has(prefs.origin) ? `<div class="empty">Tu parada no responde ahora. Lo reintento en unos segundos.</div>` : `<div class="empty">Consultando tu parada…</div>`; return; }
-  const t = T.find(x => x.reaches);
-  if (!t) { el.innerHTML = `<div class="empty">Ningún bus va hacia ${shortName(stopName(prefs.dest))} en la próxima hora y media.</div>`; heroBus = null; renderNext(T); return; }
+  if (!hasTrip()) { heroBus = null; heroTrip = null; return; }
+  const list = trips();
+  if (list === null) { el.innerHTML = results.has(prefs.origin) ? `<div class="empty">A túa parada non responde agora. Volvo tentalo nuns segundos.</div>` : `<div class="empty">Consultando a túa parada…</div>`; return; }
+  const t = list.find(x => x.reaches); heroTrip = t || null;
+  if (!t) { el.innerHTML = `<div class="empty">Ningún bus vai cara a ${shortName(stopName(prefs.dest))} na próxima hora e media.</div>`; heroBus = null; renderNext(list); return; }
   const now = new Date();
   const passAt = hhmm(new Date(now.getTime() + t.min * 60000)), arrAt = t.destMin !== null ? hhmm(new Date(now.getTime() + t.destMin * 60000)) : '—';
   let progress = '';
@@ -120,43 +120,43 @@ function renderHero() {
     const startStop = t.r.stops.filter(s => s.d <= t.r.stopById.get(prefs.origin).d - windowM).pop();
     const stopsLeft = t.r.stops.filter(s => s.d > t.along && s.d <= t.r.stopById.get(prefs.origin).d).length;
     progress = `<div class="bar"><div style="width:${pct}%;background:${t.r.color}"></div></div>
-      <div class="marks"><span>${startStop ? shortName(startStop.name) : ''}</span><span>${passed ? 'Por ' + shortName(passed.name) : 'Saliendo de cabecera'}</span><span>${stopsLeft <= 0 ? 'Ya llega' : `Faltan ${stopsLeft} ${stopsLeft === 1 ? 'parada' : 'paradas'}`}</span></div>`;
+      <div class="marks"><span>${startStop ? shortName(startStop.name) : ''}</span><span>${passed ? `Por ${shortName(passed.name)}` : 'Saíndo da cabeceira'}</span><span>${stopsLeft <= 0 ? 'Xa chega' : stopsLeft === 1 ? 'Falta 1 parada' : `Faltan ${stopsLeft} paradas`}</span></div>`;
     heroBus = [...buses.values()].filter(b => b.route === t.r).sort((a, b) => Math.abs(a.fix - t.along) - Math.abs(b.fix - t.along))[0] || null;
     if (heroBus && Math.abs(heroBus.fix - t.along) > 1500) heroBus = null;
   } else {
-    progress = `<div class="sub">Aún no ha salido: es la hora del horario de Vitrasa.</div>`;
+    progress = `<div class="sub">Aínda non saíu: é a hora do horario de Vitrasa.</div>`;
   }
   const following = follow && heroBus && follow === heroBus.id;
   el.innerHTML = `
     <div class="row1"><span class="who">${badge(t.line)}<span>${t.ruta}</span></span>${stateBadge(t)}</div>
-    ${t.min <= 0 ? '<div class="big now">Llegando</div>' : `<div class="big">${t.min}<small>min</small></div>`}
-    <div class="sub n">Pasa a las <b>${passAt}</b> y llegas a ${shortName(stopName(prefs.dest))} a las <b>${arrAt}</b>${t.sure ? '' : ' (aprox.)'}</div>
+    ${t.min <= 0 ? `<div class="big now">Chegando</div>` : `<div class="big">${t.min}<small>min</small></div>`}
+    <div class="sub n">Pasa ás <b>${passAt}</b> e chegas a ${shortName(stopName(prefs.dest))} ás <b>${arrAt}</b>${t.sure ? '' : ' (aprox.)'}</div>
     ${progress}
     <div class="actions">
       <button class="btn sig" id="alertBtn" aria-pressed="${alertOn}">${alertOn ? 'Aviso activado' : 'Avisarme'}</button>
-      <button class="btn" id="followBtn" aria-pressed="${!!following}" ${t.kind === 'sched' ? 'disabled' : ''}>${following ? 'Siguiéndolo' : 'Ver en el mapa'}</button>
+      <button class="btn" id="followBtn" aria-pressed="${!!following}" ${t.kind === 'sched' ? 'disabled' : ''}>${following ? 'Seguíndoo' : 'Ver no mapa'}</button>
     </div>`;
   document.getElementById('alertBtn').onclick = toggleAlert;
   document.getElementById('followBtn').onclick = () => {
-    if (!heroBus) { toast('Este bus aún no está en el mapa'); return; }
+    if (!heroBus) { toast('Este bus aínda non está no mapa'); return; }
     if (following) { follow = null; } else { follow = heroBus.id; map.setView(heroBus.marker.getLatLng(), Math.max(map.getZoom(), 15)); showBusCard(heroBus); }
     renderHero(); restyleBuses();
   };
   restyleBuses();
   checkAlert(t);
-  renderNext(T, t);
+  renderNext(list, t);
 }
 function nextLabel(t) {
-  if (!t.reaches) return 'No va a tu destino';
-  const arr = t.destMin !== null ? `, llegas a las ${hhmm(new Date(Date.now() + t.destMin * 60000))}` : '';
-  if (t.kind === 'sched') return 'Según horario' + arr;
+  if (!t.reaches) return 'Non vai ao teu destino';
+  const arr = t.destMin !== null ? `, chegas ás ${hhmm(new Date(Date.now() + t.destMin * 60000))}` : '';
+  if (t.kind === 'sched') return 'Segundo o horario' + arr;
   const d = t.delay;
-  return (d ? (d.diff >= 2 ? `${d.diff} min tarde` : d.diff <= -2 ? `${-d.diff} min adelantado` : 'A su hora') : 'En camino') + arr;
+  return (d ? (d.diff >= 2 ? `${d.diff} min tarde` : d.diff <= -2 ? `${-d.diff} min adiantado` : 'Á súa hora') : 'En camiño') + arr;
 }
-function renderNext(T, hero) {
+function renderNext(list, hero) {
   const el = document.getElementById('nextList');
-  const rest = (T || []).filter(t => t !== hero && t.reaches).slice(0, 4);
-  if (!rest.length) { el.innerHTML = '<div class="empty">Ninguno más en la próxima hora y media.</div>'; return; }
+  const rest = (list || []).filter(t => t !== hero && t.reaches).slice(0, 4);
+  if (!rest.length) { el.innerHTML = `<div class="empty">Ningún máis na próxima hora e media.</div>`; return; }
   el.innerHTML = rest.map(t => `<div class="dep">${badge(t.line)}<span class="to"><b>${t.ruta}</b><span>${nextLabel(t)}</span></span>${whenHtml([t.min], t.kind === 'live')}</div>`).join('');
 }
 // ---------- bus card ----------
@@ -171,13 +171,13 @@ function renderBusCard() {
     const l = results.get(s.id);
     const e = l && l.filter(x => x.linea === r.line).map(x => ({ x, err: Math.abs(x.metros - (s.d - b.fix)) })).sort((p, q) => p.err - q.err)[0];
     const min = e && e.err < 900 + 0.3 * (s.d - b.fix) ? e.x.minutos : Math.max(0, Math.round((s.d - b.shown) / 1000 * 2.4));
-    const mine = s.id === prefs.origin ? 'tu parada' : s.id === prefs.dest ? 'tu destino' : '';
-    return `<div class="item"><span class="d">${s.name}${mine ? `<span>${mine}</span>` : ''}</span><span class="m n">${min <= 0 ? 'Ya' : min + ' min'}</span></div>`;
+    const mine = s.id === prefs.origin ? 'a túa parada' : s.id === prefs.dest ? 'o teu destino' : '';
+    return `<div class="item"><span class="d">${s.name}${mine ? `<span>${mine}</span>` : ''}</span><span class="m n">${min <= 0 ? 'Xa' : min + ' min'}</span></div>`;
   }).join('');
   const following = follow === b.id;
-  el.innerHTML = `<div class="bc-h">${badge(r.line)}<b>${b.info.ruta}</b><button class="x" id="busClose" aria-label="Cerrar">✕</button></div>
-    <div class="sub">Sus próximas paradas</div>${rows || '<div class="empty">Llegando al final de la línea.</div>'}
-    <div class="actions"><button class="btn${following ? '' : ' pri'}" id="busFollow">${following ? 'Dejar de seguir' : 'Seguir este bus'}</button></div>`;
+  el.innerHTML = `<div class="bc-h">${badge(r.line)}<b>${b.info.ruta}</b><button class="x" id="busClose" aria-label="Pechar">✕</button></div>
+    <div class="sub">As súas próximas paradas</div>${rows || `<div class="empty">Chegando ao final da liña.</div>`}
+    <div class="actions"><button class="btn${following ? '' : ' pri'}" id="busFollow">${following ? 'Deixar de seguir' : 'Seguir este bus'}</button></div>`;
   el.hidden = false;
   el.querySelector('#busClose').onclick = () => { busCardId = null; if (follow === b.id) { follow = null; renderHero(); restyleBuses(); } renderBusCard(); };
   el.querySelector('#busFollow').onclick = () => { follow = following ? null : b.id; if (follow) map.setView(b.marker.getLatLng(), Math.max(map.getZoom(), 15)); renderHero(); restyleBuses(); renderBusCard(); };
@@ -189,11 +189,11 @@ let editing = 'origin';
 function openEditor(which) {
   editing = which || 'origin';
   const el = document.getElementById('editor'); el.hidden = false;
-  document.getElementById('edOrigin').textContent = prefs.origin ? stopName(prefs.origin) : 'Sin elegir';
-  document.getElementById('edDest').textContent = prefs.dest ? stopName(prefs.dest) : 'Sin elegir';
+  document.getElementById('edOrigin').textContent = prefs.origin ? stopName(prefs.origin) : 'Sen escoller';
+  document.getElementById('edDest').textContent = prefs.dest ? stopName(prefs.dest) : 'Sen escoller';
   document.getElementById('edOriginBtn').setAttribute('aria-pressed', String(editing === 'origin'));
   document.getElementById('edDestBtn').setAttribute('aria-pressed', String(editing === 'dest'));
-  const q = document.getElementById('edSearch'); q.value = ''; q.placeholder = editing === 'origin' ? '¿Dónde subes? Calle o número de parada' : '¿Dónde bajas? Calle o número de parada';
+  const q = document.getElementById('edSearch'); q.value = ''; q.placeholder = editing === 'origin' ? 'Onde subes? Rúa ou número de parada' : 'Onde baixas? Rúa ou número de parada';
   renderSearch(); setTimeout(() => q.focus(), 50);
 }
 function closeEditor() { document.getElementById('editor').hidden = true; }
@@ -201,10 +201,10 @@ function renderSearch() {
   const q = document.getElementById('edSearch').value.trim();
   let list, hint = '';
   if (q) list = findStops(q).slice(0, 30);
-  else if (myPos) { list = [...STOPS.values()].sort((a, b) => hav([a.lat, a.lon], myPos) - hav([b.lat, b.lon], myPos)).slice(0, 8); hint = 'Cerca de ti'; }
-  else { list = prefs.favs.map(id => STOPS.get(id)); hint = list.length ? 'Tus paradas' : 'Escribe la calle o el número que aparece en el poste de la parada.'; }
+  else if (myPos) { list = [...STOPS.values()].sort((a, b) => hav([a.lat, a.lon], myPos) - hav([b.lat, b.lon], myPos)).slice(0, 8); hint = 'Preto de ti'; }
+  else { list = prefs.favs.map(id => STOPS.get(id)); hint = list.length ? 'As túas paradas' : 'Escribe a rúa ou o número que aparece no poste da parada.'; }
   document.getElementById('edResults').innerHTML = (hint ? `<div class="hint">${hint}</div>` : '') + list.map(s => stopRow(s, false)).join('')
-    + (q && !list.length ? '<div class="empty">Ninguna parada se llama así. Prueba con otra palabra o con el número del poste.</div>' : '');
+    + (q && !list.length ? `<div class="empty">Ningunha parada se chama así. Proba con outra palabra ou co número do poste.</div>` : '');
 }
 function setTripStop(which, id) {
   if (which === 'origin') { if (id === prefs.dest) prefs.dest = prefs.origin; prefs.origin = id; }
