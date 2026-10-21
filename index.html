@@ -285,7 +285,7 @@ const API = 'https://datos.vigo.org/vci_api_app/api2.jsp?ttl=5&tipo=TRANSPORTE-E
 const MAX_MIN = 35, MAX_WRAP_M = 6000, STOP_POLL_MS = 15000;
 
 // ---------- prefs ----------
-const prefs = { origin: 14224, dest: 14105, sel: null };
+const prefs = { origin: null, dest: null, sel: null };
 try { Object.assign(prefs, JSON.parse(localStorage.getItem('busprefs2') || '{}')); } catch (e) {}
 const savePrefs = () => { try { localStorage.setItem('busprefs2', JSON.stringify(prefs)); } catch (e) {} };
 
