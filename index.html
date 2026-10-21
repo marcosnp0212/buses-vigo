@@ -18,253 +18,263 @@
 <link rel="preconnect" href="https://unpkg.com">
 <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-/* Buses Vigo — the vocabulary of a bus stop: line plates, departure-board numerals, signal yellow for "yours".
-   Colors are tokens; the theme is set on <html data-theme>. */
+/* Buses Vigo, in the manner of Mini Metro: flat land and water, thick lines, stations as white shapes,
+   almost no chrome. Colors are tokens; the theme is set on <html data-theme>. */
 :root {
-  --ground: #e8eded; --sheet: #ffffff; --raise: #f1f4f4; --ink: #13212b; --muted: #5b6a74; --rule: #e1e7e9;
-  --signal: #ffc72c; --signal-ink: #3a2c00; --live: #149153; --late: #a8500a; --late-bg: #fbecdc; --early: #1b67a6; --early-bg: #e1eef9;
-  --ok-bg: #e2f3ea; --focus: #1b67a6; --casing: #ffffff; --bus-ring: #ffffff;
-  --shadow-sheet: 0 -1px 0 rgba(19, 33, 43, 0.04), 0 -8px 28px rgba(19, 33, 43, 0.12);
-  --shadow-float: 0 1px 2px rgba(19, 33, 43, 0.08), 0 6px 18px rgba(19, 33, 43, 0.12);
-  --scrim: rgba(15, 25, 31, 0.42);
-  --text: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --sign: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --land: #f2efe8; --water: #c4dbe6; --panel: #f2efe8; --raise: #e7e2d7; --ink: #2b2d2f; --muted: #807c74; --rule: #dcd6ca;
+  --station: #ffffff; --live: #2f8f4e; --late: #b1521b; --early: #2f6fa8; --focus: #2f6fa8; --casing: #f2efe8; --bus-ring: #f2efe8;
+  --scrim: rgba(43, 45, 47, 0.32);
+  --font: "Jost", "Futura", "Century Gothic", system-ui, sans-serif;
 }
 :root[data-theme="dark"] {
-  --ground: #0f171c; --sheet: #172128; --raise: #202c34; --ink: #e7edf0; --muted: #93a1aa; --rule: #26333b;
-  --live: #3ccb82; --late: #f0a35e; --late-bg: #3a2a1b; --early: #8cc2ee; --early-bg: #1a2c3b; --ok-bg: #18322a;
-  --focus: #8cc2ee; --casing: #0f171c; --bus-ring: #0f171c;
-  --shadow-sheet: 0 -8px 28px rgba(0, 0, 0, 0.45); --shadow-float: 0 6px 18px rgba(0, 0, 0, 0.5);
-  --scrim: rgba(0, 0, 0, 0.55); color-scheme: dark;
+  --land: #1f2830; --water: #141b21; --panel: #1f2830; --raise: #2a353e; --ink: #ece9e2; --muted: #8e979e; --rule: #34414b;
+  --station: #1f2830; --live: #5cc485; --late: #f0a35e; --early: #8cc2ee; --focus: #8cc2ee; --casing: #1f2830; --bus-ring: #1f2830;
+  --scrim: rgba(0, 0, 0, 0.5); color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--ground); color: var(--ink); font: 400 15px/1.4 var(--text); -webkit-font-smoothing: antialiased; }
+html, body { margin: 0; height: 100%; background: var(--land); color: var(--ink); font: 400 16px/1.35 var(--font); -webkit-font-smoothing: antialiased; }
 button, input { font: inherit; color: inherit; }
-button { -webkit-tap-highlight-color: transparent; }
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
+:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; }
 .n { font-variant-numeric: tabular-nums; }
 [hidden] { display: none !important; }
-#map { position: fixed; inset: 0; background: var(--ground); }
-.leaflet-container { font-family: var(--text); background: var(--ground); }
-.leaflet-control-attribution { font-size: 10px; }
-.leaflet-tooltip { font: 500 13px var(--text); border-radius: 8px; border: 0; box-shadow: var(--shadow-float); background: var(--sheet); color: var(--ink); }
-.leaflet-tooltip-top:before { border-top-color: var(--sheet); }
+#map { position: fixed; inset: 0; background: var(--land); }
+.leaflet-container { font-family: var(--font); background: var(--land); }
+.leaflet-control-attribution { font-size: 10px; background: transparent !important; color: var(--muted); }
+.leaflet-control-attribution a { color: var(--muted); }
+.leaflet-tooltip { font: 500 14px var(--font); border-radius: 6px; border: 2px solid var(--ink); box-shadow: none; background: var(--panel); color: var(--ink); padding: 3px 8px; }
+.leaflet-tooltip-top:before { display: none; }
 
-/* ---------- line plate: the code of a line, as on the pole ---------- */
-.badge { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 26px; padding: 0 7px; border-radius: 6px; color: #fff; font: 700 16px/1 var(--sign); letter-spacing: 0.01em; flex: none; }
-.badge.s { min-width: 30px; height: 20px; font-size: 13px; padding: 0 5px; border-radius: 5px; }
+/* ---------- line badge: the line's colour, round like the game's palette ---------- */
+.badge { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px; padding: 0 8px; border-radius: 17px; color: #fff; font: 600 14px/1 var(--font); flex: none; }
+.badge.s { min-width: 24px; height: 24px; font-size: 11.5px; padding: 0 6px; border-radius: 12px; }
 
-/* ---------- top bar ---------- */
-.top { position: fixed; z-index: 1000; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); display: flex; gap: 8px; pointer-events: none; }
-.top > * { pointer-events: auto; }
-.search { flex: 1; min-width: 0; height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--sheet); box-shadow: var(--shadow-float); color: var(--muted); font-size: 16px; cursor: pointer; text-align: left; }
-.search svg { width: 20px; height: 20px; flex: none; color: var(--ink); }
-.search span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lines-pill { height: 48px; display: flex; align-items: center; gap: 9px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--sheet); box-shadow: var(--shadow-float); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; }
-.lines-pill .sw { display: flex; }
-.lines-pill .sw i { width: 12px; height: 12px; border-radius: 3px; margin-left: -4px; box-shadow: 0 0 0 2px var(--sheet); }
-.lines-pill .sw i:first-child { margin-left: 0; }
+/* ---------- top: the city and the clock ---------- */
+.top { position: fixed; z-index: 1000; left: max(20px, env(safe-area-inset-left)); right: max(20px, env(safe-area-inset-right)); top: calc(14px + env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+.brand { font-weight: 300; font-size: 30px; letter-spacing: 0.02em; }
+.clock { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; }
+.clock svg { width: 32px; height: 32px; }
 
-/* ---------- map controls ---------- */
-.ctl { position: fixed; z-index: 999; right: max(12px, env(safe-area-inset-right)); top: calc(72px + env(safe-area-inset-top)); display: flex; flex-direction: column; gap: 8px; }
-.ctl button { width: 44px; height: 44px; border-radius: 12px; border: 0; background: var(--sheet); box-shadow: var(--shadow-float); font-size: 20px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+/* ---------- round outlined buttons on the right ---------- */
+.ctl { position: fixed; z-index: 999; right: max(16px, env(safe-area-inset-right)); top: calc(66px + env(safe-area-inset-top)); display: flex; flex-direction: column; gap: 10px; }
+.ctl button { width: 44px; height: 44px; border-radius: 22px; border: 2.5px solid var(--ink); background: var(--land); font-size: 22px; font-weight: 400; display: flex; align-items: center; justify-content: center; }
 .ctl svg { width: 20px; height: 20px; }
 @media (pointer: coarse) { #zin, #zout { display: none; } }
 
-/* ---------- sheet: the home of the app ---------- */
-.sheet { position: fixed; z-index: 1000; left: 0; right: 0; bottom: 0; max-height: min(58%, 560px); display: flex; flex-direction: column; background: var(--sheet); border-radius: 22px 22px 0 0; box-shadow: var(--shadow-sheet); padding-bottom: env(safe-area-inset-bottom); transition: max-height 0.28s cubic-bezier(.3, .7, .2, 1); }
-.sheet.min { max-height: calc(74px + env(safe-area-inset-bottom)); }
+/* ---------- sheet: the home of the app, flat like the game's panels ---------- */
+.sheet { position: fixed; z-index: 1000; left: 0; right: 0; bottom: 0; max-height: min(60%, 600px); display: flex; flex-direction: column; background: var(--panel); border-top: 2.5px solid var(--ink); padding-bottom: env(safe-area-inset-bottom); transition: max-height 0.28s cubic-bezier(.3, .7, .2, 1); }
+.sheet.min { max-height: calc(118px + env(safe-area-inset-bottom)); }
 .sheet.min .sheet-body { visibility: hidden; }
-.grab { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px; border: 0; background: none; padding: 8px 20px 10px; cursor: pointer; text-align: left; }
-.grab::before { content: ""; align-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--rule); }
+.grab { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 6px; border: 0; background: none; padding: 8px 22px 8px; text-align: left; }
+.grab::before { content: ""; align-self: center; width: 36px; height: 4px; border-radius: 2px; background: var(--rule); }
 .grab .hrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.grab h1 { margin: 0; font: 700 26px/1.1 var(--sign); letter-spacing: 0.005em; }
+.grab h1 { margin: 0; font: 500 22px/1.15 var(--font); }
 .fresh { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .fresh i { width: 8px; height: 8px; border-radius: 50%; background: var(--live); }
 .fresh.stale i { background: #c9a227; } .fresh.err i { background: #d64545; }
-.sheet-body { overflow: auto; overscroll-behavior: contain; padding: 0 20px 18px; display: flex; flex-direction: column; gap: 18px; }
+.sheet-body { overflow: auto; overscroll-behavior: contain; padding: 0 22px 12px; display: flex; flex-direction: column; gap: 16px; flex: 1; min-height: 0; }
 
-/* ---------- departure rows (the memorable bit: the board numerals) ---------- */
-.dep { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--rule); }
-.dep:first-child { border-top: 0; }
+/* the lines on the map, as the game's colour palette */
+.palette { flex: none; display: flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-top: 2px solid var(--rule); background: none; padding: 12px 16px 14px; }
+.palette .sw { display: flex; gap: 9px; }
+.palette .sw i { width: 28px; height: 28px; border-radius: 14px; display: block; }
+.palette .sw i.more { border: 2.5px dashed var(--muted); font-style: normal; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--muted); }
+.palette span:last-child { font-size: 14px; color: var(--muted); }
+
+/* ---------- departure rows ---------- */
+.dep { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 7px 0; }
 .dep .to { min-width: 0; }
-.dep .to b { display: block; font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dep .to b { display: block; font-weight: 400; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dep .to span { display: block; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.when { display: flex; flex-direction: column; align-items: flex-end; font-family: var(--sign); white-space: nowrap; }
-.when .w1 { display: flex; align-items: baseline; gap: 4px; }
-.when .w2 { font: 500 13px var(--text); color: var(--muted); }
-.when .t { font-weight: 700; font-size: 32px; line-height: 1; font-variant-numeric: tabular-nums; }
-.when .u { font-weight: 600; font-size: 15px; color: var(--muted); }
-.when .now { font-weight: 700; font-size: 22px; color: var(--live); }
+.when { display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap; }
+.when .w1 { display: flex; align-items: baseline; gap: 3px; }
+.when .t { font-weight: 300; font-size: 38px; line-height: 0.95; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.when .u { font-size: 14px; color: var(--muted); }
+.when .w2 { font-size: 12.5px; color: var(--muted); }
+.when .now { font-weight: 500; font-size: 18px; color: var(--live); }
 .when.sched .t { color: var(--muted); }
-.live { width: 14px; height: 14px; align-self: center; color: var(--live); flex: none; }
+.live { width: 13px; height: 13px; align-self: center; color: var(--live); flex: none; margin-right: 2px; }
 .live path { animation: wave 2.4s ease-in-out infinite; }
 .live path + path { animation-delay: 0.3s; }
 @keyframes wave { 0%, 60%, 100% { opacity: 1; } 30% { opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) { .live path { animation: none; } .sheet { transition: none; } }
 
-/* ---------- a favourite stop ---------- */
+/* station shapes (each saved stop has its own) */
+.shape { width: 22px; height: 22px; flex: none; display: block; }
+.shape * { fill: var(--station); stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+
+/* ---------- a saved stop ---------- */
 .fav { display: flex; flex-direction: column; }
-.fav-h { display: flex; align-items: center; gap: 4px; padding-bottom: 2px; }
-.fav-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; border: 0; background: none; padding: 4px 0; cursor: pointer; text-align: left; border-radius: 8px; }
+.fav-h { display: flex; align-items: center; gap: 4px; }
+.fav-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; border: 0; background: none; padding: 4px 0; text-align: left; }
 .fav-open .nm { flex: 1; min-width: 0; }
-.fav-open .nm b { display: block; font: 600 21px/1.15 var(--sign); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fav-open .nm b { display: block; font: 500 19px/1.2 var(--font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fav-open .nm span { font-size: 13px; color: var(--muted); }
 .fav-open .go { color: var(--muted); width: 18px; height: 18px; flex: none; }
-.fav + .fav { border-top: 6px solid var(--raise); margin: 0 -20px; padding: 14px 20px 0; }
+.fav + .fav { border-top: 2px solid var(--rule); padding-top: 14px; }
+.fav .none { font-size: 14px; color: var(--muted); padding: 4px 0 2px 34px; }
 .fav .btn.link { align-self: flex-start; padding: 0; }
-.fav .none { font-size: 14px; color: var(--muted); padding: 6px 0 2px; }
-.add { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed var(--rule); background: none; border-radius: 12px; padding: 12px; font-weight: 600; cursor: pointer; color: var(--muted); }
+.add { display: flex; align-items: center; justify-content: center; gap: 8px; border: 2.5px dashed var(--rule); background: none; border-radius: 24px; padding: 12px; font-weight: 500; color: var(--muted); }
 .add:hover { color: var(--ink); border-color: var(--muted); }
 
 /* star toggle */
-.star { width: 40px; height: 40px; flex: none; border: 0; border-radius: 10px; background: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
+.star { width: 40px; height: 40px; flex: none; border: 0; border-radius: 20px; background: none; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
 .star svg { width: 22px; height: 22px; }
-.star[aria-pressed="true"] { color: #e0a800; }
-.star[aria-pressed="true"] svg path { fill: var(--signal); stroke: #c79400; }
+.star[aria-pressed="true"] { color: var(--ink); }
+.star[aria-pressed="true"] svg path { fill: var(--ink); }
 
-/* ---------- welcome (empty home) ---------- */
+/* ---------- welcome ---------- */
 .welcome { display: flex; flex-direction: column; gap: 10px; padding-top: 2px; }
-.welcome p { margin: 0 0 6px; color: var(--muted); font-size: 15px; max-width: 34ch; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border-radius: 12px; padding: 0 16px; font-weight: 600; font-size: 15px; border: 0; background: var(--raise); cursor: pointer; }
+.welcome p { margin: 0 0 6px; color: var(--muted); font-size: 16px; max-width: 34ch; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border-radius: 23px; padding: 0 18px; font-weight: 500; font-size: 16px; border: 2.5px solid var(--ink); background: none; }
 .btn svg { width: 18px; height: 18px; flex: none; }
-.btn.pri { background: var(--ink); color: var(--sheet); }
-.btn.sig { background: var(--signal); color: var(--signal-ink); }
-.btn[aria-pressed="true"] { background: var(--ink); color: var(--sheet); }
-.btn.link { background: none; min-height: 40px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
-.btn:disabled { opacity: 0.45; cursor: default; }
-.empty { color: var(--muted); font-size: 14px; padding: 4px 0; }
+.btn.pri, .btn.sig, .btn[aria-pressed="true"] { background: var(--ink); color: var(--land); }
+.btn.link { border: 0; min-height: 40px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.empty { color: var(--muted); font-size: 15px; padding: 4px 0; }
 
 /* ---------- my trip ---------- */
 .trip { display: flex; flex-direction: column; gap: 10px; }
 .trip-row { display: flex; align-items: center; gap: 4px; }
-.trip-pill { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; border: 0; background: var(--raise); border-radius: 12px; padding: 10px 12px; cursor: pointer; text-align: left; font-weight: 600; }
-.trip-pill .pins { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: none; }
-.trip-pill .pins i { width: 9px; height: 9px; border-radius: 50%; border: 2.5px solid var(--ink); }
-.trip-pill .pins i + i { background: var(--signal); border-color: var(--ink); }
+.trip-pill { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; border: 2.5px solid var(--ink); background: none; border-radius: 24px; padding: 9px 14px; text-align: left; font-weight: 500; }
+.trip-pill .pins { display: flex; align-items: center; gap: 0; flex: none; }
+.trip-pill .pins i { width: 11px; height: 11px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--station); }
+.trip-pill .pins i + i { border-radius: 2px; margin-left: 10px; position: relative; }
+.trip-pill .pins i + i::before { content: ""; position: absolute; right: 100%; top: 2px; width: 10px; height: 2.5px; background: var(--ink); }
 .trip-pill span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.trip-x { width: 40px; height: 40px; border: 0; background: none; border-radius: 10px; cursor: pointer; color: var(--muted); font-size: 16px; flex: none; }
+.trip-x { width: 40px; height: 40px; border: 0; background: none; border-radius: 20px; color: var(--muted); font-size: 16px; flex: none; }
 .hero { display: flex; flex-direction: column; gap: 6px; }
 .hero .row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.hero .who { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; }
+.hero .who { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 500; }
 .hero .who span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.state { font-size: 13px; font-weight: 600; border-radius: 6px; padding: 3px 8px; white-space: nowrap; background: var(--raise); color: var(--muted); }
-.state.late { color: var(--late); background: var(--late-bg); } .state.early { color: var(--early); background: var(--early-bg); } .state.ok { color: var(--live); background: var(--ok-bg); }
-.big { font: 700 64px/0.95 var(--sign); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.big small { font-size: 22px; font-weight: 600; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
-.big.now { font-size: 44px; color: var(--live); }
-.sub { color: var(--muted); font-size: 14px; }
-.sub b { color: var(--ink); font-weight: 600; }
-.bar { height: 6px; background: var(--raise); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.state { font-size: 13px; font-weight: 500; border-radius: 12px; padding: 3px 9px; white-space: nowrap; border: 2px solid var(--rule); color: var(--muted); }
+.state.late { color: var(--late); border-color: currentColor; } .state.early { color: var(--early); border-color: currentColor; } .state.ok { color: var(--live); border-color: currentColor; }
+.big { font: 300 72px/0.95 var(--font); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.big small { font-size: 20px; font-weight: 400; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.big.now { font-size: 44px; font-weight: 500; color: var(--live); }
+.sub { color: var(--muted); font-size: 15px; }
+.sub b { color: var(--ink); font-weight: 500; }
+.bar { height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; margin-top: 6px; }
 .bar div { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
-.marks { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.marks { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); }
 .marks span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.marks span:nth-child(2) { color: var(--ink); font-weight: 600; }
-.actions { display: flex; gap: 8px; margin-top: 4px; }
+.marks span:nth-child(2) { color: var(--ink); font-weight: 500; }
+.actions { display: flex; gap: 10px; margin-top: 6px; }
 .actions .btn { flex: 1; }
-.subhead { margin: 4px 0 0; font: 600 15px var(--text); color: var(--muted); }
+.subhead { margin: 6px 0 0; font: 500 15px var(--font); color: var(--muted); }
 
-/* ---------- stop panel (stop mode) ---------- */
-#stopPanel { position: fixed; z-index: 1001; left: 0; right: 0; bottom: 0; max-height: 52%; display: flex; flex-direction: column; background: var(--sheet); border-radius: 22px 22px 0 0; box-shadow: var(--shadow-sheet); padding: 16px 20px calc(14px + env(safe-area-inset-bottom)); gap: 6px; }
-.sp-head { display: flex; align-items: flex-start; gap: 4px; }
+/* ---------- stop panel ---------- */
+#stopPanel { position: fixed; z-index: 1001; left: 0; right: 0; bottom: 0; max-height: 56%; display: flex; flex-direction: column; background: var(--panel); border-top: 2.5px solid var(--ink); padding: 16px 22px calc(14px + env(safe-area-inset-bottom)); gap: 6px; }
+.sp-head { display: flex; align-items: center; gap: 6px; }
+.sp-head .shape { width: 28px; height: 28px; margin-right: 6px; }
 .sp-head .nm { flex: 1; min-width: 0; }
-.sp-head .nm b { display: block; font: 700 26px/1.1 var(--sign); }
+.sp-head .nm b { display: block; font: 500 22px/1.15 var(--font); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .sp-head .meta { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 13px; margin-top: 4px; }
-.sp-head .meta span { margin-right: 4px; }
-.x { width: 40px; height: 40px; border: 0; background: var(--raise); border-radius: 50%; cursor: pointer; font-size: 15px; flex: none; }
+.x { width: 40px; height: 40px; border: 2.5px solid var(--ink); background: none; border-radius: 50%; font-size: 14px; flex: none; }
 #stopPanel .list { overflow: auto; overscroll-behavior: contain; margin-top: 4px; }
-.arr { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 9px 8px; margin: 0 -8px; width: calc(100% + 16px); border: 0; box-shadow: inset 0 1px 0 var(--rule); background: none; text-align: left; cursor: pointer; }
-.arr:first-child { box-shadow: none; }
-.arr.sel { background: var(--raise); border-radius: 10px; box-shadow: none; }
-.arr.sel + .arr { box-shadow: none; }
-@media (hover: hover) { .arr[data-bus]:hover { background: var(--raise); border-radius: 10px; } }
+.arr { display: block; width: 100%; padding: 10px 0 4px; border: 0; border-top: 2px solid var(--rule); background: none; text-align: left; }
+.arr:first-child { border-top: 0; }
+.arr .ah { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
 .arr .d { min-width: 0; }
-.arr .d b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.arr .d span { display: block; color: var(--muted); font-size: 13px; }
-.stopacts { display: flex; gap: 8px; margin-top: 8px; }
-.stopacts .btn { flex: 1; padding: 0 10px; font-size: 14px; }
+.arr .d b { display: block; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arr .d span { display: block; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arr.sel .d b { font-weight: 600; }
+/* the last stops before yours, drawn straight, and the bus coming */
+.strip { display: block; width: 100%; height: 46px; margin-top: 2px; overflow: visible; }
+.strip text { font: 400 11px var(--font); fill: var(--muted); }
+.strip .you { fill: var(--ink); font-weight: 500; }
+.strip .st { fill: var(--station); stroke: var(--ink); stroke-width: 2.5; }
+.strip .end { fill: var(--station); stroke: var(--ink); stroke-width: 3; }
+.stopacts { display: flex; gap: 10px; margin-top: 8px; }
+.stopacts .btn { flex: 1; padding: 0 10px; font-size: 15px; }
 
 /* ---------- bus card ---------- */
-.buscard { position: fixed; z-index: 1001; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); top: calc(70px + env(safe-area-inset-top)); background: var(--sheet); border-radius: 18px; box-shadow: var(--shadow-float); padding: 14px 16px; }
+.buscard { position: fixed; z-index: 1001; left: max(16px, env(safe-area-inset-left)); right: max(72px, env(safe-area-inset-right)); top: calc(66px + env(safe-area-inset-top)); background: var(--panel); border: 2.5px solid var(--ink); border-radius: 18px; padding: 12px 16px; }
 .buscard .bc-h { display: flex; align-items: center; gap: 10px; }
-.buscard .bc-h b { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.buscard .item { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 0; border-top: 1px solid var(--rule); }
+.buscard .bc-h b { flex: 1; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.buscard .item { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 6px 0; border-top: 2px solid var(--rule); }
 .buscard .item:first-of-type { border-top: 0; }
 .buscard .item .d { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .buscard .item .d span { color: var(--muted); font-size: 13px; margin-left: 6px; }
-.buscard .item .m { font: 700 20px var(--sign); }
+.buscard .item .m { font-weight: 300; font-size: 24px; }
 .buscard .sub { margin: 8px 0 2px; }
 
-/* ---------- overlays: search, trip editor, line picker ---------- */
+/* ---------- overlays ---------- */
 .overlay { position: fixed; inset: 0; z-index: 1200; background: var(--scrim); display: flex; align-items: flex-start; justify-content: center; padding: calc(12px + env(safe-area-inset-top)) 12px 12px; }
-.panel { width: min(520px, 100%); max-height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 14px; background: var(--sheet); border-radius: 18px; box-shadow: var(--shadow-float); }
-.field { display: flex; align-items: center; gap: 10px; background: var(--raise); border-radius: 12px; padding: 0 12px; }
+.panel { width: min(520px, 100%); max-height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--panel); border: 2.5px solid var(--ink); border-radius: 22px; }
+.field { display: flex; align-items: center; gap: 10px; border: 2.5px solid var(--ink); border-radius: 24px; padding: 0 14px; }
 .field svg { width: 20px; height: 20px; color: var(--muted); flex: none; }
-.field input { flex: 1; min-width: 0; height: 46px; border: 0; background: none; font-size: 16px; outline: none; }
+.field input { flex: 1; min-width: 0; height: 44px; border: 0; background: none; font-size: 16px; outline: none; }
 .field:focus-within { box-shadow: 0 0 0 2px var(--focus); }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-.chips .btn { min-height: 38px; font-size: 14px; padding: 0 12px; }
+.chips .btn { min-height: 38px; font-size: 14.5px; padding: 0 14px; border-width: 2px; }
 .results { overflow: auto; overscroll-behavior: contain; display: flex; flex-direction: column; margin: 0 -4px; }
-.results .hint { font-size: 13px; color: var(--muted); padding: 2px 4px 6px; }
-.res { display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--rule); }
+.results .hint { font-size: 13.5px; color: var(--muted); padding: 2px 4px 6px; }
+.res { display: flex; align-items: center; gap: 6px; border-top: 2px solid var(--rule); }
 .res:first-of-type { border-top: 0; }
-.res .open { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; border: 0; background: none; padding: 10px 4px; cursor: pointer; text-align: left; border-radius: 10px; }
+.res .open { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; border: 0; background: none; padding: 10px 4px; text-align: left; border-radius: 10px; }
 .res .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .res .meta > span:first-child { color: var(--muted); font-size: 13px; margin-right: 6px; }
 @media (hover: hover) { .res .open:hover, .fav-open:hover { background: var(--raise); } }
-.res b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
+.res b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
 
 .edrow { display: flex; gap: 10px; align-items: center; }
 .edstops { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.edbtn { text-align: left; border: 2px solid transparent; background: var(--raise); border-radius: 12px; padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; min-width: 0; }
+.edbtn { text-align: left; border: 2.5px solid var(--rule); background: none; border-radius: 16px; padding: 7px 14px; display: flex; flex-direction: column; min-width: 0; }
 .edbtn span { font-size: 13px; color: var(--muted); }
-.edbtn b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.edbtn b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .edbtn[aria-pressed="true"] { border-color: var(--ink); }
 .edside { display: flex; flex-direction: column; gap: 6px; }
-.swap { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--raise); font-size: 18px; cursor: pointer; flex: none; }
+.swap { width: 44px; height: 44px; border-radius: 50%; border: 2.5px solid var(--ink); background: none; font-size: 18px; flex: none; }
 
 .pkgrid { overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
-.lt { display: flex; align-items: center; gap: 10px; text-align: left; border: 2px solid transparent; background: var(--raise); border-radius: 12px; padding: 8px 10px; cursor: pointer; min-width: 0; }
-.lt[aria-pressed="true"] { border-color: var(--ink); background: var(--sheet); }
-.lt[aria-pressed="false"] .badge { opacity: 0.4; }
-.lt span.nm { font-size: 12px; color: var(--muted); line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.lt { display: flex; align-items: center; gap: 10px; text-align: left; border: 2.5px solid transparent; background: none; border-radius: 16px; padding: 7px 9px; min-width: 0; }
+.lt[aria-pressed="true"] { border-color: var(--ink); }
+.lt[aria-pressed="false"] .badge { opacity: 0.35; }
+.lt span.nm { font-size: 12.5px; color: var(--muted); line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
 .about { gap: 14px; }
 .ab-head { display: flex; align-items: center; justify-content: space-between; }
-.ab-head h2 { margin: 0; font: 700 26px/1.1 var(--sign); }
+.ab-head h2 { margin: 0; font: 300 30px/1.1 var(--font); letter-spacing: 0.02em; }
+.seg { display: flex; gap: 6px; }
+.seg .btn { flex: 1; min-height: 40px; font-size: 15px; padding: 0 10px; }
 .ab-body { overflow: auto; overscroll-behavior: contain; }
 .ab-body p { margin: 0 0 10px; color: var(--muted); max-width: 60ch; }
-.ab-body h3 { margin: 16px 0 4px; font: 600 17px var(--text); }
+.ab-body h3 { margin: 16px 0 4px; font: 500 17px var(--font); }
 .ab-body .fine { font-size: 13px; }
-.toast { position: fixed; z-index: 1300; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom)); max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 12px; background: var(--ink); color: var(--sheet); font-weight: 600; font-size: 14px; box-shadow: var(--shadow-float); display: none; }
+.toast { position: fixed; z-index: 1300; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom)); max-width: calc(100% - 32px); padding: 11px 18px; border-radius: 22px; background: var(--ink); color: var(--land); font-weight: 500; font-size: 15px; display: none; }
 .toast.show { display: block; }
 
 /* ---------- markers ---------- */
-.busm { display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font: 700 11px/1 var(--sign); border: 3px solid var(--bus-ring); box-shadow: 0 2px 6px rgba(0,0,0,.3); width: 32px; height: 32px; }
-.busm.mine { box-shadow: 0 0 0 4px rgba(255, 199, 44, .55), 0 2px 6px rgba(0,0,0,.3); }
-.busp { display: inline-flex; align-items: center; gap: 5px; padding: 0 9px 0 3px; height: 28px; border-radius: 8px; color: #fff; font: 700 15px/1 var(--sign); border: 2px solid var(--bus-ring); box-shadow: 0 2px 6px rgba(0,0,0,.3); white-space: nowrap; }
-.busp b { background: rgba(255,255,255,.22); border-radius: 5px; padding: 3px 6px; font-size: 14px; }
-.busp.sel { outline: 3px solid var(--signal); }
-.busp .more { font-style: normal; margin-left: 3px; padding: 3px 6px; border-radius: 5px; background: var(--ink); color: var(--sheet); font-size: 13px; }
+/* a bus: a small carriage in its line's colour with the line number, and a nose pointing where it goes */
+.car { position: relative; display: flex; align-items: center; justify-content: center; height: 22px; min-width: 32px; padding: 0 6px; border-radius: 5px; font: 600 12px/1 var(--font); color: #fff; border: 2px solid var(--bus-ring); }
+.car .nose { position: absolute; left: 50%; top: 50%; width: 80px; height: 80px; margin: -40px 0 0 -40px; overflow: visible; pointer-events: none; }
+.car .nose path { stroke: var(--bus-ring); stroke-width: 1.5; stroke-linejoin: round; }
+.car.mine { outline: 3px solid var(--ink); outline-offset: 1px; }
+.busp { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px 0 3px; height: 28px; border-radius: 6px; color: #fff; font: 600 14px/1 var(--font); border: 2px solid var(--bus-ring); white-space: nowrap; }
+.busp b { background: rgba(255,255,255,.24); border-radius: 4px; padding: 3px 6px; font-size: 13px; font-weight: 600; }
+.busp.sel { outline: 3px solid var(--ink); outline-offset: 1px; }
 .busp.ghost { border-style: dashed; opacity: 0.92; }
-.stopmark { width: 22px; height: 22px; border-radius: 50%; background: var(--signal); border: 4px solid #13212b; box-shadow: 0 2px 10px rgba(0,0,0,.35); }
+.busp .more { font-style: normal; margin-left: 2px; padding: 3px 6px; border-radius: 4px; background: var(--ink); color: var(--land); font-size: 12px; }
+/* stations you care about, as shapes */
+.stn { width: 26px; height: 26px; display: block; }
+.stn * { fill: var(--station); stroke: var(--ink); stroke-width: 3.2; stroke-linejoin: round; }
+.stn.big { width: 34px; height: 34px; }
+.stn.big * { stroke-width: 3.6; }
 
-/* ---------- wide screens: the sheet becomes a column on the left ---------- */
+/* ---------- wide screens: the panel becomes a column on the left ---------- */
 @media (min-width: 820px) {
-  .top { right: auto; width: 400px; left: 16px; top: 16px; }
-  .ctl { top: 16px; right: 16px; }
-  .sheet, #stopPanel { left: 16px; right: auto; top: 76px; bottom: 16px; width: 400px; max-height: none; height: auto; border-radius: 18px; box-shadow: var(--shadow-float); }
-  .sheet { bottom: auto; max-height: calc(100% - 92px); }
-  .sheet.min { max-height: 74px; }
-  .grab { padding-top: 16px; }
+  .top { right: auto; left: 24px; width: 380px; top: 18px; }
+  .ctl { top: 18px; right: 18px; }
+  .sheet, #stopPanel { left: 16px; right: auto; top: 70px; bottom: auto; width: 400px; max-height: calc(100% - 86px); border: 2.5px solid var(--ink); border-radius: 22px; }
+  .sheet.min { max-height: 120px; }
+  .grab { padding-top: 14px; }
   .grab::before { display: none; }
-  #stopPanel { bottom: auto; max-height: calc(100% - 92px); }
-  .buscard { left: auto; right: 76px; width: 340px; top: 16px; }
+  .buscard { left: auto; right: 78px; width: 340px; top: 18px; }
   .toast { bottom: 24px; }
 }
 
@@ -274,17 +284,17 @@ button { -webkit-tap-highlight-color: transparent; }
 <div id="map" role="application" aria-label="Mapa de buses de Vigo"></div>
 
 <div class="top">
-  <button class="search" id="searchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><span>Buscar unha parada</span></button>
-  <button class="lines-pill" id="linesPill" aria-label="Escoller que liñas ver no mapa"><span class="sw" id="linesSw"></span><span id="linesTxt">Liñas</span></button>
+  <span class="brand">Vigo</span>
+  <span class="clock" aria-hidden="true"><span id="clockTxt"></span><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="16" cy="16" r="13"/><path id="clockHand" d="M16 16V8"/><path id="clockHand2" d="M16 16l5 3"/></svg></span>
 </div>
 
 <div class="ctl">
+  <button id="searchBtn" aria-label="Buscar unha parada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button>
+  <button id="locBtn" aria-label="A miña localización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg></button>
+  <button id="recenter" aria-label="Encadrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
   <button id="zin" aria-label="Achegar">+</button>
   <button id="zout" aria-label="Afastar">−</button>
-  <button id="locBtn" aria-label="A miña localización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg></button>
-  <button id="recenter" aria-label="Encadrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
-  <button id="themeBtn" aria-label="Tema"></button>
-  <button id="infoBtn" aria-label="Acerca de Buses Vigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg></button>
+  <button id="infoBtn" aria-label="Acerca de Buses Vigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 11v6M12 7.5v.01"/></svg></button>
 </div>
 
 <section class="sheet" id="sheet" aria-label="As miñas paradas">
@@ -299,6 +309,7 @@ button { -webkit-tap-highlight-color: transparent; }
     </div>
     <div id="favs"></div>
   </div>
+  <button class="palette" id="linesPill" aria-label="Escoller que liñas ver no mapa"><span class="sw" id="linesSw"></span><span id="linesTxt">Liñas</span></button>
 </section>
 
 <section id="stopPanel" hidden aria-live="polite"></section>
@@ -344,6 +355,7 @@ button { -webkit-tap-highlight-color: transparent; }
 <div class="overlay" id="about" hidden>
   <div class="panel about" role="dialog" aria-label="Acerca de Buses Vigo">
     <div class="ab-head"><h2>Buses Vigo</h2><button class="x" id="abClose" aria-label="Pechar">✕</button></div>
+    <div class="seg" role="group" aria-label="Tema"><button class="btn" data-theme="auto">Automático</button><button class="btn" data-theme="light">Día</button><button class="btn" data-theme="dark">Noite</button></div>
     <div class="ab-body">
       <p>Cando chega o teu bus, dunha ollada. Proxecto persoal, sen relación con Vitrasa nin co Concello de Vigo.</p>
       <h3>De onde saen os datos</h3>
@@ -453,32 +465,17 @@ const map = L.map('map', { zoomControl: false, preferCanvas: false }).setView([4
 let baseLayer = null; const styleCache = {};
 const ATTR = '© OpenStreetMap · OpenFreeMap · datos: Concello de Vigo / Vitrasa';
 // Our own palette on top of OpenFreeMap: the stock dark style is nearly black (streets #181818 on #0c0c0c).
-const DARK_PAINT = {
-  background: { 'background-color': '#1b1f24' },
-  water: { 'fill-color': '#0f1419' }, waterway: { 'line-color': '#0f1419' },
-  landuse_residential: { 'fill-color': '#1e2328' }, landcover_wood: { 'fill-color': '#1b2420' }, landuse_park: { 'fill-color': '#1b2420' },
-  building: { 'fill-color': '#252a30' },
-  road_area_pier: { 'fill-color': '#1b1f24' }, road_pier: { 'line-color': '#1b1f24' },
-  'aeroway-area': { 'fill-color': '#22272d' }, 'aeroway-runway': { 'line-color': '#2b3138' }, 'aeroway-taxiway': { 'line-color': '#262b31' },
-  highway_path: { 'line-color': '#2a3036' }, highway_minor: { 'line-color': '#30363d' },
-  highway_major_casing: { 'line-color': '#3b424a' }, highway_major_inner: { 'line-color': '#363d45' }, highway_major_subtle: { 'line-color': '#363d45' },
-  highway_motorway_casing: { 'line-color': '#4a525b' }, highway_motorway_inner: { 'line-color': '#404850' }, highway_motorway_subtle: { 'line-color': '#363d45' },
-  railway: { 'line-color': '#2c3238' }, railway_minor: { 'line-color': '#2c3238' }, railway_transit: { 'line-color': '#2c3238' },
-  railway_dashline: { 'line-color': '#1b1f24' }, railway_minor_dashline: { 'line-color': '#1b1f24' }, railway_transit_dashline: { 'line-color': '#1b1f24' },
-};
+// Base map in the manner of Mini Metro: land and water only, plus the names of places to find your way.
+const BASE = { light: { land: '#f2efe8', water: '#c4dbe6', text: '#9b968c' }, dark: { land: '#1f2830', water: '#141b21', text: '#6f7b84' } };
 function tint(style, isDark) {
+  const c = BASE[isDark ? 'dark' : 'light'];
+  style.layers = style.layers.filter(l => l.type === 'background' || (/^water/.test(l.id) && (l.type === 'fill' || l.type === 'line')) || (l.type === 'symbol' && /^place_(city|town|village|suburb|neighbourhood|quarter|hamlet)/.test(l.id)));
   for (const l of style.layers) {
     const p = l.paint || (l.paint = {});
-    if (isDark) {
-      Object.assign(p, DARK_PAINT[l.id] || {});
-      if (l.type === 'symbol') {
-        p['text-color'] = /^place/.test(l.id) ? '#b4bcc4' : /^water/.test(l.id) ? '#5b6b79' : '#8d969f';
-        p['text-halo-color'] = '#1b1f24'; p['text-halo-width'] = 1.2;
-      }
-    } else {
-      if (l.type === 'background') p['background-color'] = '#f2f3f0';
-      if (/^water/.test(l.id) && l.type === 'fill') p['fill-color'] = '#cdd8de';
-    }
+    if (l.type === 'background') p['background-color'] = c.land;
+    else if (l.type === 'fill') { p['fill-color'] = c.water; delete p['fill-pattern']; p['fill-opacity'] = 1; }
+    else if (l.type === 'line') p['line-color'] = c.water;
+    else { p['text-color'] = c.text; p['text-halo-color'] = c.land; p['text-halo-width'] = 1.4; }
   }
   return style;
 }
@@ -492,10 +489,10 @@ function loadMaplibre() {
   }
   return maplibreReady;
 }
-const getStyle = name => styleCache[name] || (styleCache[name] = fetch('https://tiles.openfreemap.org/styles/' + name).then(r => r.json()).then(s => tint(s, name === 'dark')));
+const getStyle = name => styleCache[name] || (styleCache[name] = fetch('https://tiles.openfreemap.org/styles/positron').then(r => r.json()).then(s => tint(s, name === 'dark')));
 let baseSeq = 0;
 async function setBase() {
-  const name = dark ? 'dark' : 'positron', my = ++baseSeq;
+  const name = dark ? 'dark' : 'light', my = ++baseSeq;
   try {
     const [style] = await Promise.all([getStyle(name), loadMaplibre()]);
     if (my !== baseSeq) return;   // the theme changed meanwhile
@@ -518,17 +515,10 @@ setBase();
 function applyTheme() {
   dark = computeDark();
   document.documentElement.dataset.theme = dark ? 'dark' : 'light'; syncThemeColor();
-  setBase(); drawRoutes(); for (const [id, m] of stopMarkers) m.setStyle(stopStyle(id)); restyleBuses(); renderThemeBtn();
+  setBase(); drawRoutes(); for (const m of stopMarkers.values()) m.setStyle(stopStyle()); restyleBuses(); renderThemeBtn();
 }
-function renderThemeBtn() {
-  const b = document.getElementById('themeBtn'); if (!b) return;
-  const t = prefs.theme || 'auto';
-  b.innerHTML = t === 'dark' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>'
-    : t === 'light' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>';
-  const label = t === 'dark' ? 'Tema: escuro' : t === 'light' ? 'Tema: claro' : 'Tema: automático';
-  b.setAttribute('aria-label', label); b.title = label;
-}
+// the theme is chosen in the About panel: automatic, day or night
+function renderThemeBtn() { document.querySelectorAll('#about [data-theme]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === (prefs.theme || 'auto')))); }
 sysDark.addEventListener('change', () => { if (!prefs.theme || prefs.theme === 'auto') applyTheme(); });
 const canvas = L.canvas({ padding: 0.2, tolerance: 6 });
 const routeLayer = L.layerGroup().addTo(map);
@@ -541,27 +531,39 @@ let mode = 'explore', focusStop = null, selectedBus = null;
 // the full routes when their set, width or theme change; the stretches to the stop are updated in place.
 let routeKey = '';
 const segLines = new Map();   // bus id -> [{ casing, line }] for each stretch to the stop
+// A polyline drawn a few pixels to one side: lines sharing a street run next to each other, as on a metro map.
+const OffsetLine = L.Polyline.extend({
+  _project() {
+    L.Polyline.prototype._project.call(this);
+    const o = this.options.offset; if (!o) return;
+    this._rings = this._rings.map(r => r.map((p, i) => {
+      const a = r[Math.max(0, i - 1)], b = r[Math.min(r.length - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, n = Math.hypot(dx, dy) || 1;
+      return L.point(p.x - dy / n * o, p.y + dx / n * o);
+    }));
+  },
+});
+let lineOffset = {};   // line code -> pixels to the side
+const lineWidth = () => { const z = map.getZoom(); return z >= 15 ? 6 : z >= 13 ? 4.5 : 3; };
 function drawRoutes() {
-  const casing = dark ? '#171a1e' : '#ffffff';
-  const line = (pts, o) => L.polyline(pts, { ...o, interactive: false, renderer: canvas });
+  const casing = dark ? '#1f2830' : '#f2efe8';
+  const line = (pts, o) => new OffsetLine(pts, { ...o, interactive: false, renderer: canvas, lineJoin: 'round', lineCap: 'round', smoothFactor: 1.5 });
+  // side by side only while there are few lines: with dozens it would just smear them
+  const spread = codes => { const w = lineWidth(), gap = w + 1; lineOffset = {}; if (codes.length <= 10) codes.forEach((c, i) => { lineOffset[c] = (i - (codes.length - 1) / 2) * gap; }); };
   let list, key;
   if (mode === 'explore') {
-    const many = sel.size > 8, w = many ? (map.getZoom() >= 15 ? 3 : 2) : 3.5;
-    list = MAINS.filter(r => sel.has(r.line)); key = ['e', dark, w, list.map(r => r.id)].join('|');
+    list = MAINS.filter(r => sel.has(r.line)); const codes = [...new Set(list.map(r => r.line))], many = codes.length > 10, w = many ? lineWidth() * 0.75 : lineWidth();
+    key = ['e', dark, w, list.map(r => r.id)].join('|');
     if (key !== routeKey) {
-      routeLayer.clearLayers();
-      for (const r of list) {
-        if (!many) line(r.coords, { color: casing, weight: 7, opacity: 0.6 }).addTo(routeLayer);
-        line(r.coords, { color: r.color, weight: w, opacity: many ? 0.55 : 0.85 }).addTo(routeLayer);
-      }
+      spread(codes); routeLayer.clearLayers();
+      for (const r of list) line(r.coords, { color: r.color, weight: w, opacity: 1, offset: lineOffset[r.line] || 0 }).addTo(routeLayer);
     }
   } else {
-    // stop mode: every route that serves this stop, faint; the stretch each bus still has to run until the stop, bold
+    // stop mode: only the lines that serve this stop, soft; the stretch each bus still has to run until the stop, solid
     const shown = new Set();
     for (const b of buses.values()) shown.add(b.route);
     for (const r of STOPS.get(focusStop).routes) if (r.main) shown.add(r);
-    list = [...shown]; key = ['s', dark, list.map(r => r.id).sort()].join('|');
-    if (key !== routeKey) { routeLayer.clearLayers(); for (const r of list) line(r.coords, { color: r.color, weight: 3, opacity: 0.22 }).addTo(routeLayer); }
+    list = [...shown]; key = ['s', dark, lineWidth(), list.map(r => r.id).sort()].join('|');
+    if (key !== routeKey) { spread([...new Set(list.map(r => r.line))]); routeLayer.clearLayers(); for (const r of list) line(r.coords, { color: r.color, weight: 2.5, opacity: 0.35 }).addTo(routeLayer); }
   }
   // keep the full routes under the stops and the stretches to the stop
   if (key !== routeKey) { routeKey = key; routeLayer.getLayers().reverse().forEach(l => l.bringToBack()); }
@@ -569,28 +571,49 @@ function drawRoutes() {
   for (const [id, segs] of segLines) if (!live.has(id)) { for (const s of segs) { segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); } segLines.delete(id); }
   for (const id of live) {
     const b = buses.get(id), want = b.toStop || [], have = segLines.get(id) || [];
-    const ghost = !!b.info.ghost, style = { color: b.route.color, weight: selectedBus === id ? 7 : 5, opacity: 1, dashArray: ghost ? '6 8' : null };
+    const ghost = !!b.info.ghost, style = { color: b.route.color, weight: lineWidth() + (selectedBus === id ? 2 : 0), opacity: 1, dashArray: ghost ? '2 10' : null, offset: lineOffset[b.route.line] || 0 };
     while (have.length > want.length) { const s = have.pop(); segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); }
     want.forEach((pts, i) => {
       let s = have[i];
       if (s && s.ghost !== ghost) { segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); s = null; }
       if (!s) {
-        s = have[i] = { ghost, casing: ghost ? null : line(pts, { color: casing, weight: 9, opacity: 0.7 }).addTo(segLayer), line: line(pts, style).addTo(segLayer), weight: style.weight, color: casing };
+        s = have[i] = { ghost, casing: null, line: line(pts, style).addTo(segLayer), weight: style.weight, color: casing };
         return;
       }
       if (s.casing) { s.casing.setLatLngs(pts); if (s.color !== casing) { s.casing.setStyle({ color: casing }); s.color = casing; } }
       s.line.setLatLngs(pts);
-      if (s.weight !== style.weight) { s.line.setStyle({ weight: style.weight }); s.weight = style.weight; }
+      if (s.weight !== style.weight) { s.line.setStyle({ weight: style.weight, offset: style.offset }); s.weight = style.weight; }
     });
     segLines.set(id, have);
   }
 }
 
 const stopMarkers = new Map();
-function stopStyle(id) {
-  if (id === prefs.dest) return { radius: 8, color: dark ? '#171a1e' : '#1d2024', weight: 3, fillColor: '#ffcc33', fillOpacity: 1 };
-  if (id === prefs.origin) return { radius: 7, color: dark ? '#e9ecef' : '#1d2024', weight: 4, fillColor: dark ? '#22262b' : '#fff', fillOpacity: 1 };
-  return { radius: 4.5, color: dark ? '#aab3bc' : '#6b737c', weight: 1.5, fillColor: dark ? '#22262b' : '#fff', fillOpacity: 1 };
+function stopStyle() {
+  return { radius: map.getZoom() >= 15 ? 5 : 4, color: dark ? '#ece9e2' : '#2b2d2f', weight: 2.2, fillColor: dark ? '#1f2830' : '#ffffff', fillOpacity: 1 };
+}
+// Station shapes, as in the game: each saved stop has its own, the destination of your trip is a star.
+const poly = (n, r, rot = -90, inner) => { const pts = []; for (let i = 0; i < n * (inner ? 2 : 1); i++) { const a = (rot + i * 360 / (n * (inner ? 2 : 1))) * Math.PI / 180, rr = inner && i % 2 ? inner : r; pts.push((13 + rr * Math.cos(a)).toFixed(2) + ' ' + (13 + rr * Math.sin(a)).toFixed(2)); } return `<path d="M${pts.join('L')}Z"/>`; };
+const SHAPE_SVG = {
+  circle: '<circle cx="13" cy="13" r="8.5"/>', square: '<rect x="5" y="5" width="16" height="16"/>', triangle: poly(3, 10.5, -90),
+  diamond: poly(4, 10.5, -90), pentagon: poly(5, 9.8, -90), hexagon: poly(6, 9.5, 0), star: poly(5, 11, -90, 5),
+  cross: '<path d="M10 4h6v6h6v6h-6v6h-6v-6H4v-6h6z"/>',
+};
+const SHAPES = ['square', 'triangle', 'diamond', 'pentagon', 'cross', 'hexagon'];
+function shapeFor(id) {
+  const i = prefs.favs.indexOf(id);
+  if (i >= 0) return SHAPES[i % SHAPES.length];
+  return id === prefs.dest ? 'star' : id === prefs.origin ? 'circle' : null;
+}
+const shapeSvg = (shape, cls = 'shape') => shape ? `<svg class="${cls}" viewBox="0 0 26 26" aria-hidden="true">${SHAPE_SVG[shape]}</svg>` : '';
+const shapeLayer = L.layerGroup().addTo(map);
+function drawShapes() {
+  shapeLayer.clearLayers();
+  for (const id of new Set([...prefs.favs, prefs.origin, prefs.dest])) {
+    const s = STOPS.get(id); if (!s || id === focusStop) continue;
+    L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: shapeSvg(shapeFor(id), 'stn') }), zIndexOffset: 500, keyboard: false, title: s.name })
+      .on('click', () => enterStop(id)).addTo(shapeLayer);
+  }
 }
 for (const s of STOPS.values()) {
   const m = L.circleMarker([s.lat, s.lon], { ...stopStyle(s.id), renderer: canvas });
@@ -604,23 +627,24 @@ function collectStopRouteStops() { stopRouteStops = new Set(); for (const b of b
 function refreshStops() {
   const z = map.getZoom(), bounds = map.getBounds().pad(0.2);
   for (const [id, m] of stopMarkers) {
-    const s = STOPS.get(id), special = id === prefs.origin || id === prefs.dest;
+    const s = STOPS.get(id), special = false;
     let visible;
     if (mode === 'stop') visible = special || (z >= 14 && bounds.contains([s.lat, s.lon]) && stopRouteStops.has(id));
     else visible = special || (bounds.contains([s.lat, s.lon]) && ((z >= 14 && [...s.lines].some(l => sel.has(l))) || z >= 16));
-    if (id === focusStop) visible = false;
-    if (visible && !stopLayer.hasLayer(m)) { m.setStyle(stopStyle(id)); stopLayer.addLayer(m); }
+    if (id === focusStop || shapeFor(id)) visible = false;
+    if (visible && !stopLayer.hasLayer(m)) { m.setStyle(stopStyle()); stopLayer.addLayer(m); }
     if (!visible && stopLayer.hasLayer(m)) stopLayer.removeLayer(m);
   }
 }
 map.on('zoomend moveend', refreshStops);
-map.on('zoomend', () => { restyleBuses(); if (mode === 'explore') drawRoutes(); else declutter(); });
+map.on('zoomend', () => { for (const m of stopMarkers.values()) m.setStyle(stopStyle()); });
+map.on('zoomend', () => { restyleBuses(); drawRoutes(); if (mode === 'stop') declutter(); });
 
 // ---------- line picker ----------
 function renderLinesPill() {
-  const list = [...sel];
-  document.getElementById('linesSw').innerHTML = list.slice(0, 4).map(l => `<i style="background:${LINE_COLORS[l]}"></i>`).join('');
-  document.getElementById('linesTxt').textContent = list.length === LINES.length ? 'Todas' : list.length === 0 ? 'Ningunha' : list.length <= 2 ? list.join(', ') : prefs.sel === null ? 'As miñas liñas' : `${list.length} liñas`;
+  const list = [...sel], shown = list.length > 7 ? list.slice(0, 6) : list;
+  document.getElementById('linesSw').innerHTML = shown.map(l => `<i style="background:${LINE_COLORS[l]}"></i>`).join('') + (list.length > shown.length ? `<i class="more">+${list.length - shown.length}</i>` : '');
+  document.getElementById('linesTxt').textContent = list.length === LINES.length ? 'Todas' : list.length === 0 ? 'Ningunha' : prefs.sel === null ? 'As miñas liñas' : list.length <= 2 ? list.join(', ') : `${list.length} liñas`;
 }
 function renderPicker() {
   const q = norm(document.getElementById('pkSearch').value.trim());
@@ -651,11 +675,6 @@ document.getElementById('zin').onclick = () => map.zoomIn();
 document.getElementById('zout').onclick = () => map.zoomOut();
 document.getElementById('recenter').onclick = () => { follow = null; if (mode === 'stop') fitStop(); else if (hasTrip()) fitTrip(); else map.setView([42.22, -8.72], 13); };
 document.getElementById('locBtn').onclick = locate;
-document.getElementById('themeBtn').onclick = () => {
-  const order = ['auto', 'light', 'dark'];
-  prefs.theme = order[(order.indexOf(prefs.theme || 'auto') + 1) % 3]; savePrefs(); applyTheme();
-  toast(prefs.theme === 'auto' ? 'Tema automático, coma o teu sistema' : prefs.theme === 'light' ? 'Tema claro' : 'Tema escuro');
-};
 renderThemeBtn();
 document.getElementById('tripPill').onclick = () => openEditor('origin');
 const hasTrip = () => !!(prefs.origin && prefs.dest);
@@ -790,12 +809,12 @@ function busIcon(b) {
     return L.divIcon({ className: '', iconSize: null, iconAnchor: [24, 14], html });
   }
   const mine = follow === b.id || (heroBus && heroBus.id === b.id);
-  // size follows the zoom so a whole-city view stays readable
-  const z = map.getZoom(), size = mine ? 40 : z <= 12 ? 18 : z === 13 ? 24 : z === 14 ? 28 : 32;
-  const label = size >= 24 || mine ? r.line : '';
-  const fs = Math.max(8, Math.round(size * (r.line.length > 3 ? 0.28 : r.line.length > 2 ? 0.32 : 0.36)));
-  return L.divIcon({ className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
-    html: `<div class="busm${mine ? ' mine' : ''}" style="background:${r.color};color:${fg};font-size:${fs}px;width:${size}px;height:${size}px;border-width:${size < 24 ? 2 : 3}px">${label}</div>` });
+  const w = Math.max(32, 16 + 7.5 * r.line.length), a = (b.heading || 0) * Math.PI / 180;
+  // where the nose starts: the edge of the carriage in that direction
+  const h = Math.min(Math.abs(Math.cos(a)) > 0.01 ? w / 2 / Math.abs(Math.cos(a)) : 99, Math.abs(Math.sin(a)) > 0.01 ? 11 / Math.abs(Math.sin(a)) : 99) - 1;
+  const nose = b.heading === undefined ? '' : `<svg class="nose" viewBox="-40 -40 80 80" style="transform:rotate(${b.heading}deg)"><path d="M${(h + 8).toFixed(1)} 0L${h.toFixed(1)} -6.5V6.5Z" fill="${r.color}"/></svg>`;
+  return L.divIcon({ className: '', iconSize: [w, 22], iconAnchor: [w / 2, 11],
+    html: `<div class="car${mine ? ' mine' : ''}" style="background:${r.color};color:${fg};min-width:${w}px">${nose}${r.line}</div>` });
 }
 // Each bus marker is its own DOM layer, so: rebuild its icon only when it looks different,
 // keep off-screen buses off the map, and only move a marker when it moves at least half a pixel.
@@ -890,6 +909,11 @@ setInterval(() => {
       const p = map.latLngToLayerPoint(ll), q = b.px;
       if (q && Math.abs(p.x - q.x) < 0.5 && Math.abs(p.y - q.y) < 0.5) { b.marker._latlng = ll; continue; }
       b.px = p;
+      // which way it goes, in steps of 45°: the icon only changes when the direction does
+      if (b.onMap && mode === 'explore') {
+        const a = map.latLngToLayerPoint(pointAt(b.route, Math.min(b.shown + 40, b.route.length))), deg = Math.round(Math.atan2(a.y - p.y, a.x - p.x) * 180 / Math.PI / 45) * 45;
+        if (deg !== b.heading && (a.x !== p.x || a.y !== p.y)) { b.heading = deg; setBusIcon(b); }
+      }
     }
     placeBus(b, ll);
   }
@@ -913,7 +937,8 @@ function enterStop(id) {
   document.getElementById('finder').hidden = true;
   const s = STOPS.get(id);
   if (focusMarker) map.removeLayer(focusMarker);
-  focusMarker = L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 11], html: '<div class="stopmark"></div>' }), zIndexOffset: 2000, keyboard: false }).addTo(map);
+  focusMarker = L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', iconSize: [34, 34], iconAnchor: [17, 17], html: shapeSvg(shapeFor(id) || 'circle', 'stn big') }), zIndexOffset: 2000, keyboard: false }).addTo(map);
+  drawShapes();
   renderStopPanel(true); syncUrl();
   drawRoutes(); refreshStops();
   results.delete(id);
@@ -923,7 +948,7 @@ function exitStop() {
   if (mode !== 'stop') return;
   mode = 'explore'; focusStop = null; selectedBus = null;
   if (focusMarker) { map.removeLayer(focusMarker); focusMarker = null; }
-  clearBuses();
+  clearBuses(); drawShapes();
   document.getElementById('stopPanel').hidden = true;
   document.getElementById('sheet').hidden = false;
   renderTripText(); renderHome(); syncUrl();
@@ -939,6 +964,21 @@ function selectArrival(busId) {
   const b = buses.get(busId);
   if (b && selectedBus) map.flyTo(b.marker.getLatLng(), Math.max(map.getZoom(), 15), { duration: 0.6 });
   restyleBuses(); drawRoutes(); renderStopPanel(); declutter();
+}
+// The line drawn straight: the last stops before yours and where the bus is between them.
+function strip(f, b) {
+  const r = f.base || f.r || (f.lapOf && f.lapOf.base); if (!r || !r.stopById.has(focusStop)) return '';
+  const i = r.stops.findIndex(x => x.id === focusStop), st = r.stops.slice(Math.max(0, i - 4), i + 1); if (st.length < 2) return '';
+  const W = 300, d0 = st[0].d, d1 = st[st.length - 1].d, X = d => 10 + (d - d0) / (d1 - d0 || 1) * W, c = r.color;
+  let busX = null, far = false;
+  if (b && !f.noGps) { const along = (f.chain || []).length > 1 ? -1 : b.shown; if (along < d0) { busX = 10; far = true; } else busX = X(Math.min(along, d1)); }
+  const short = n => n.replace(/^(Rúa|Avenida|Avda\.|Praza|Estrada|Camiño)\s+(d[aeo]s?\s+)?/i, '');
+  return `<svg class="strip" viewBox="0 0 320 46" preserveAspectRatio="xMinYMid meet" aria-hidden="true">
+    ${far ? `<path d="M0 12H10" stroke="${c}" stroke-width="6" stroke-dasharray="2 4"/>` : ''}<path d="M10 12H${10 + W}" stroke="${c}" stroke-width="6" stroke-linecap="round" opacity="${f.noGps ? 0.4 : 1}"/>
+    ${st.slice(0, -1).map(x => `<circle class="st" cx="${X(x.d).toFixed(1)}" cy="12" r="5"/>`).join('')}
+    <g transform="translate(${10 + W},12)">${SHAPE_SVG[shapeFor(focusStop) || 'circle'].replace(/^<(\w+)/, '<$1 class="end" transform="scale(.85) translate(-13,-13)"')}</g>
+    ${busX !== null ? `<g transform="translate(${busX.toFixed(1)},12)"><rect x="-12" y="-7.5" width="24" height="15" rx="3" fill="${c}" stroke="var(--panel)" stroke-width="1.5"/><circle cx="-4.5" r="2" fill="#fff"/><circle cx="1.5" r="2" fill="#fff"/><rect x="5.5" y="-2" width="4" height="4" fill="#fff"/></g>` : ''}
+    <text x="4" y="38">${far ? 'Ven de máis lonxe' : short(st[0].name)}</text><text class="you" x="${10 + W}" y="38" text-anchor="end">${f.noGps ? 'Aínda sen saír' : 'A túa parada'}</text></svg>`;
 }
 function renderStopPanel(loading) {
   const el = document.getElementById('stopPanel'); el.hidden = false;
@@ -956,12 +996,12 @@ function renderStopPanel(loading) {
       const at = hhmm(new Date(now + f.min * 60000));
       const detail = f.noGps ? `Programado ás ${at}` + (f.head ? `, sae de ${shortName(f.head)}` : '') + (f.ghost ? '' : ', aínda sen GPS')
         : `Chega ás ${at}, a ${fmtDist(f.metros)}` + (f.lapOf ? `, na volta seguinte do bus de ${f.lapOf.min} min` : '');
-      return `<button class="arr${b && selectedBus === b.id ? ' sel' : ''}" ${b ? `data-bus="${b.id}"` : ''}>${badge(f.line)}
-        <span class="d"><b>${f.ruta}</b><span>${detail}</span></span>${whenHtml([f.min], !f.noGps)}</button>`;
+      return `<button class="arr${b && selectedBus === b.id ? ' sel' : ''}" ${b ? `data-bus="${b.id}"` : ''}><span class="ah">${badge(f.line)}
+        <span class="d"><b>${f.ruta}</b><span>${detail}</span></span>${whenHtml([f.min], !f.noGps)}</span>${strip(f, b)}</button>`;
     }).join('');
   }
   const fav = prefs.favs.includes(s.id);
-  el.innerHTML = `<div class="sp-head"><div class="nm"><b>${s.name}</b><div class="meta"><span>Parada ${s.id}</span>${[...s.lines].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })).map(l => badge(l, true)).join('')}</div></div>
+  el.innerHTML = `<div class="sp-head">${shapeSvg(shapeFor(s.id) || 'circle')}<div class="nm"><b>${s.name}</b><div class="meta">Parada ${s.id}, ${s.lines.size} liñas</div></div>
       <button class="star" id="spShare" aria-label="Compartir esta parada" title="Compartir esta parada">${SHARE}</button><button class="star" id="spStar" aria-pressed="${fav}" aria-label="${fav ? 'Quitar das miñas paradas' : 'Gardar nas miñas paradas'}" title="${fav ? 'Quitar das miñas paradas' : 'Gardar nas miñas paradas'}">${STAR}</button><button class="x" id="spClose" aria-label="Pechar a parada">✕</button></div>
     <div class="list">${rows}</div>
     <div class="stopacts"><button class="btn" id="spOrig">Subo aquí</button><button class="btn" id="spDest">Baixo aquí</button><button class="btn" id="spFit">Ver os buses</button></div>`;
@@ -1043,7 +1083,14 @@ function renderFresh() {
   el.classList.toggle('err', lastErr && (age === null || age > 90)); el.classList.toggle('stale', age !== null && age > 90 && !lastErr);
   txt.textContent = age === null ? (lastErr ? 'Sen conexión' : 'Conectando…') : age < 10 ? 'En directo' : age < 90 ? `Hai ${age} s` : `Hai ${Math.round(age / 60)} min`;
 }
-setInterval(renderFresh, 5000);
+// the clock in the corner, like the game's: weekday, time and a dial
+const DAYS = ['DOM', 'LUN', 'MAR', 'MÉR', 'XOV', 'VEN', 'SÁB'];
+function renderClock() {
+  const d = new Date(), m = d.getMinutes(), h = d.getHours() % 12 + m / 60, hand = (deg, len) => { const a = (deg - 90) * Math.PI / 180; return `M16 16L${(16 + len * Math.cos(a)).toFixed(1)} ${(16 + len * Math.sin(a)).toFixed(1)}`; };
+  document.getElementById('clockTxt').textContent = DAYS[d.getDay()] + ' ' + hhmm(d);
+  document.getElementById('clockHand').setAttribute('d', hand(m * 6, 9)); document.getElementById('clockHand2').setAttribute('d', hand(h * 30, 5.5));
+}
+setInterval(() => { renderFresh(); renderClock(); }, 5000);
 addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   for (const id of ['editor', 'finder', 'picker', 'about']) if (!document.getElementById(id).hidden) { document.getElementById(id).hidden = true; return; }
@@ -1077,7 +1124,7 @@ function toggleFav(id) {
   if (adding) { prefs.favs.push(id); prefs.welcomed = true; } else prefs.favs.splice(i, 1);
   savePrefs(); toast(adding ? `${shortName(stopName(id))} gardada nas miñas paradas` : `${shortName(stopName(id))} quitada das miñas paradas`);
   if (adding && !results.has(id)) fetchStop(id).then(l => { results.set(id, l); renderHome(); }, () => {});
-  refreshAutoLines(); renderHome();
+  refreshAutoLines(); renderHome(); drawShapes(); refreshStops();
 }
 function renderHome() {
   const box = document.getElementById('favs'), has = prefs.favs.length > 0, trip = !!(prefs.origin || prefs.dest);
@@ -1100,7 +1147,7 @@ function renderHome() {
       : !deps.length ? `<div class="none">Ningún bus na próxima hora e media.</div>`
       : deps.slice(0, 4).map(d => `<div class="dep">${badge(d.line)}<span class="to"><b>${d.ruta}</b><span>${d.mins[0] <= 0 ? 'Na parada' : d.live ? `Chega ás ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}` : `Programado, ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}`}</span></span>${whenHtml(d.mins, d.live)}</div>`).join('')
         + (deps.length > 4 ? `<button class="btn link" data-open="${s.id}">${deps.length - 4} máis nesta parada</button>` : '');
-    return `<section class="fav"><div class="fav-h"><button class="fav-open" data-open="${s.id}"><span class="nm"><b>${s.name}</b><span>Parada ${s.id}${dist}</span></span>${CHEVRON}</button>
+    return `<section class="fav"><div class="fav-h"><button class="fav-open" data-open="${s.id}">${shapeSvg(shapeFor(s.id))}<span class="nm"><b>${s.name}</b><span>Parada ${s.id}${dist}</span></span>${CHEVRON}</button>
       <button class="star" data-star="${s.id}" aria-pressed="true" aria-label="Quitar ${s.name} das miñas paradas">${STAR}</button></div>${rows}</section>`;
   }).join('') + `<button class="add" id="favAdd">+ ${has ? 'Engadir outra parada' : 'Engadir unha parada'}</button>`;
   box.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openStop(+b.dataset.open));
@@ -1127,7 +1174,8 @@ async function shareStop(s) {
 function syncUrl() { history.replaceState(null, '', mode === 'stop' ? '?parada=' + focusStop : location.pathname); }
 
 // ---------- about ----------
-document.getElementById('infoBtn').onclick = () => { document.getElementById('about').hidden = false; };
+document.getElementById('infoBtn').onclick = () => { document.getElementById('about').hidden = false; renderThemeBtn(); };
+document.querySelectorAll('#about [data-theme]').forEach(b => b.onclick = () => { prefs.theme = b.dataset.theme; savePrefs(); applyTheme(); });
 document.getElementById('abClose').onclick = () => { document.getElementById('about').hidden = true; };
 document.getElementById('about').addEventListener('click', e => { if (e.target.id === 'about') e.target.hidden = true; });
 
@@ -1170,11 +1218,11 @@ document.getElementById('finder').addEventListener('click', e => {
   const op = e.target.closest('.open'); if (op) { document.getElementById('finder').hidden = true; openStop(+op.dataset.id); }
 });
 
-function afterTripChange() { refreshStops(); renderTripText(); renderHome(); refreshAutoLines(); if (mode === 'explore') { fitTrip(); renderHero(); } restartPolling(true); }
+function afterTripChange() { drawShapes(); refreshStops(); renderTripText(); renderHome(); refreshAutoLines(); if (mode === 'explore') { fitTrip(); renderHero(); } restartPolling(true); }
 
 // ---------- trip logic ----------
 const tripRoute = line => routesOfLine(line).filter(r => r.stopById.has(prefs.origin) && r.stopById.has(prefs.dest) && r.stopById.get(prefs.dest).d > r.stopById.get(prefs.origin).d).sort((a, b) => b.main - a.main || b.rank - a.rank)[0];
-const HHMM = new Intl.DateTimeFormat('gl-ES', { hour: '2-digit', minute: '2-digit' }), hhmm = d => HHMM.format(d);
+const hhmm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');   // 24 h whatever the phone's locale
 // ---- official timetable (GTFS): patterns of stops with minute offsets, trips with start minute and service dates ----
 const SVC = SCHED.dates.map(d => new Set(d));
 const STOPIDX = new Map(), TRIPS_BY_PAT = SCHED.patterns.map(() => []);
@@ -1495,7 +1543,7 @@ document.getElementById('edResults').addEventListener('click', e => { const b = 
 // ---------- start ----------
 let viewStop = prefs.dest;
 if (prefs.sheetMin) setSheet(true);
-renderTripText(); renderHome(); renderFresh(); renderLinesPill(); drawRoutes(); refreshStops();
+renderTripText(); renderHome(); renderFresh(); renderClock(); renderLinesPill(); drawRoutes(); drawShapes(); refreshStops();
 // opened from a stop link
 const linked = +new URLSearchParams(location.search).get('parada');
 if (STOPS.has(linked)) { fitted = true; openStop(linked); } else tick();

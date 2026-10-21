@@ -18,7 +18,7 @@
 <link rel="preconnect" href="https://unpkg.com">
 <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 /*BASECSS*/
@@ -28,17 +28,17 @@
 <div id="map" role="application" aria-label="Mapa de buses de Vigo"></div>
 
 <div class="top">
-  <button class="search" id="searchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><span>Buscar unha parada</span></button>
-  <button class="lines-pill" id="linesPill" aria-label="Escoller que liñas ver no mapa"><span class="sw" id="linesSw"></span><span id="linesTxt">Liñas</span></button>
+  <span class="brand">Vigo</span>
+  <span class="clock" aria-hidden="true"><span id="clockTxt"></span><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="16" cy="16" r="13"/><path id="clockHand" d="M16 16V8"/><path id="clockHand2" d="M16 16l5 3"/></svg></span>
 </div>
 
 <div class="ctl">
+  <button id="searchBtn" aria-label="Buscar unha parada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button>
+  <button id="locBtn" aria-label="A miña localización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg></button>
+  <button id="recenter" aria-label="Encadrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
   <button id="zin" aria-label="Achegar">+</button>
   <button id="zout" aria-label="Afastar">−</button>
-  <button id="locBtn" aria-label="A miña localización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg></button>
-  <button id="recenter" aria-label="Encadrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
-  <button id="themeBtn" aria-label="Tema"></button>
-  <button id="infoBtn" aria-label="Acerca de Buses Vigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg></button>
+  <button id="infoBtn" aria-label="Acerca de Buses Vigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 11v6M12 7.5v.01"/></svg></button>
 </div>
 
 <section class="sheet" id="sheet" aria-label="As miñas paradas">
@@ -53,6 +53,7 @@
     </div>
     <div id="favs"></div>
   </div>
+  <button class="palette" id="linesPill" aria-label="Escoller que liñas ver no mapa"><span class="sw" id="linesSw"></span><span id="linesTxt">Liñas</span></button>
 </section>
 
 <section id="stopPanel" hidden aria-live="polite"></section>
@@ -98,6 +99,7 @@
 <div class="overlay" id="about" hidden>
   <div class="panel about" role="dialog" aria-label="Acerca de Buses Vigo">
     <div class="ab-head"><h2>Buses Vigo</h2><button class="x" id="abClose" aria-label="Pechar">✕</button></div>
+    <div class="seg" role="group" aria-label="Tema"><button class="btn" data-theme="auto">Automático</button><button class="btn" data-theme="light">Día</button><button class="btn" data-theme="dark">Noite</button></div>
     <div class="ab-body">
       <p>Cando chega o teu bus, dunha ollada. Proxecto persoal, sen relación con Vitrasa nin co Concello de Vigo.</p>
       <h3>De onde saen os datos</h3>
@@ -205,32 +207,17 @@ const map = L.map('map', { zoomControl: false, preferCanvas: false }).setView([4
 let baseLayer = null; const styleCache = {};
 const ATTR = '© OpenStreetMap · OpenFreeMap · datos: Concello de Vigo / Vitrasa';
 // Our own palette on top of OpenFreeMap: the stock dark style is nearly black (streets #181818 on #0c0c0c).
-const DARK_PAINT = {
-  background: { 'background-color': '#1b1f24' },
-  water: { 'fill-color': '#0f1419' }, waterway: { 'line-color': '#0f1419' },
-  landuse_residential: { 'fill-color': '#1e2328' }, landcover_wood: { 'fill-color': '#1b2420' }, landuse_park: { 'fill-color': '#1b2420' },
-  building: { 'fill-color': '#252a30' },
-  road_area_pier: { 'fill-color': '#1b1f24' }, road_pier: { 'line-color': '#1b1f24' },
-  'aeroway-area': { 'fill-color': '#22272d' }, 'aeroway-runway': { 'line-color': '#2b3138' }, 'aeroway-taxiway': { 'line-color': '#262b31' },
-  highway_path: { 'line-color': '#2a3036' }, highway_minor: { 'line-color': '#30363d' },
-  highway_major_casing: { 'line-color': '#3b424a' }, highway_major_inner: { 'line-color': '#363d45' }, highway_major_subtle: { 'line-color': '#363d45' },
-  highway_motorway_casing: { 'line-color': '#4a525b' }, highway_motorway_inner: { 'line-color': '#404850' }, highway_motorway_subtle: { 'line-color': '#363d45' },
-  railway: { 'line-color': '#2c3238' }, railway_minor: { 'line-color': '#2c3238' }, railway_transit: { 'line-color': '#2c3238' },
-  railway_dashline: { 'line-color': '#1b1f24' }, railway_minor_dashline: { 'line-color': '#1b1f24' }, railway_transit_dashline: { 'line-color': '#1b1f24' },
-};
+// Base map in the manner of Mini Metro: land and water only, plus the names of places to find your way.
+const BASE = { light: { land: '#f2efe8', water: '#c4dbe6', text: '#9b968c' }, dark: { land: '#1f2830', water: '#141b21', text: '#6f7b84' } };
 function tint(style, isDark) {
+  const c = BASE[isDark ? 'dark' : 'light'];
+  style.layers = style.layers.filter(l => l.type === 'background' || (/^water/.test(l.id) && (l.type === 'fill' || l.type === 'line')) || (l.type === 'symbol' && /^place_(city|town|village|suburb|neighbourhood|quarter|hamlet)/.test(l.id)));
   for (const l of style.layers) {
     const p = l.paint || (l.paint = {});
-    if (isDark) {
-      Object.assign(p, DARK_PAINT[l.id] || {});
-      if (l.type === 'symbol') {
-        p['text-color'] = /^place/.test(l.id) ? '#b4bcc4' : /^water/.test(l.id) ? '#5b6b79' : '#8d969f';
-        p['text-halo-color'] = '#1b1f24'; p['text-halo-width'] = 1.2;
-      }
-    } else {
-      if (l.type === 'background') p['background-color'] = '#f2f3f0';
-      if (/^water/.test(l.id) && l.type === 'fill') p['fill-color'] = '#cdd8de';
-    }
+    if (l.type === 'background') p['background-color'] = c.land;
+    else if (l.type === 'fill') { p['fill-color'] = c.water; delete p['fill-pattern']; p['fill-opacity'] = 1; }
+    else if (l.type === 'line') p['line-color'] = c.water;
+    else { p['text-color'] = c.text; p['text-halo-color'] = c.land; p['text-halo-width'] = 1.4; }
   }
   return style;
 }
@@ -244,10 +231,10 @@ function loadMaplibre() {
   }
   return maplibreReady;
 }
-const getStyle = name => styleCache[name] || (styleCache[name] = fetch('https://tiles.openfreemap.org/styles/' + name).then(r => r.json()).then(s => tint(s, name === 'dark')));
+const getStyle = name => styleCache[name] || (styleCache[name] = fetch('https://tiles.openfreemap.org/styles/positron').then(r => r.json()).then(s => tint(s, name === 'dark')));
 let baseSeq = 0;
 async function setBase() {
-  const name = dark ? 'dark' : 'positron', my = ++baseSeq;
+  const name = dark ? 'dark' : 'light', my = ++baseSeq;
   try {
     const [style] = await Promise.all([getStyle(name), loadMaplibre()]);
     if (my !== baseSeq) return;   // the theme changed meanwhile
@@ -270,17 +257,10 @@ setBase();
 function applyTheme() {
   dark = computeDark();
   document.documentElement.dataset.theme = dark ? 'dark' : 'light'; syncThemeColor();
-  setBase(); drawRoutes(); for (const [id, m] of stopMarkers) m.setStyle(stopStyle(id)); restyleBuses(); renderThemeBtn();
+  setBase(); drawRoutes(); for (const m of stopMarkers.values()) m.setStyle(stopStyle()); restyleBuses(); renderThemeBtn();
 }
-function renderThemeBtn() {
-  const b = document.getElementById('themeBtn'); if (!b) return;
-  const t = prefs.theme || 'auto';
-  b.innerHTML = t === 'dark' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>'
-    : t === 'light' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>';
-  const label = t === 'dark' ? 'Tema: escuro' : t === 'light' ? 'Tema: claro' : 'Tema: automático';
-  b.setAttribute('aria-label', label); b.title = label;
-}
+// the theme is chosen in the About panel: automatic, day or night
+function renderThemeBtn() { document.querySelectorAll('#about [data-theme]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === (prefs.theme || 'auto')))); }
 sysDark.addEventListener('change', () => { if (!prefs.theme || prefs.theme === 'auto') applyTheme(); });
 const canvas = L.canvas({ padding: 0.2, tolerance: 6 });
 const routeLayer = L.layerGroup().addTo(map);
@@ -293,27 +273,39 @@ let mode = 'explore', focusStop = null, selectedBus = null;
 // the full routes when their set, width or theme change; the stretches to the stop are updated in place.
 let routeKey = '';
 const segLines = new Map();   // bus id -> [{ casing, line }] for each stretch to the stop
+// A polyline drawn a few pixels to one side: lines sharing a street run next to each other, as on a metro map.
+const OffsetLine = L.Polyline.extend({
+  _project() {
+    L.Polyline.prototype._project.call(this);
+    const o = this.options.offset; if (!o) return;
+    this._rings = this._rings.map(r => r.map((p, i) => {
+      const a = r[Math.max(0, i - 1)], b = r[Math.min(r.length - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, n = Math.hypot(dx, dy) || 1;
+      return L.point(p.x - dy / n * o, p.y + dx / n * o);
+    }));
+  },
+});
+let lineOffset = {};   // line code -> pixels to the side
+const lineWidth = () => { const z = map.getZoom(); return z >= 15 ? 6 : z >= 13 ? 4.5 : 3; };
 function drawRoutes() {
-  const casing = dark ? '#171a1e' : '#ffffff';
-  const line = (pts, o) => L.polyline(pts, { ...o, interactive: false, renderer: canvas });
+  const casing = dark ? '#1f2830' : '#f2efe8';
+  const line = (pts, o) => new OffsetLine(pts, { ...o, interactive: false, renderer: canvas, lineJoin: 'round', lineCap: 'round', smoothFactor: 1.5 });
+  // side by side only while there are few lines: with dozens it would just smear them
+  const spread = codes => { const w = lineWidth(), gap = w + 1; lineOffset = {}; if (codes.length <= 10) codes.forEach((c, i) => { lineOffset[c] = (i - (codes.length - 1) / 2) * gap; }); };
   let list, key;
   if (mode === 'explore') {
-    const many = sel.size > 8, w = many ? (map.getZoom() >= 15 ? 3 : 2) : 3.5;
-    list = MAINS.filter(r => sel.has(r.line)); key = ['e', dark, w, list.map(r => r.id)].join('|');
+    list = MAINS.filter(r => sel.has(r.line)); const codes = [...new Set(list.map(r => r.line))], many = codes.length > 10, w = many ? lineWidth() * 0.75 : lineWidth();
+    key = ['e', dark, w, list.map(r => r.id)].join('|');
     if (key !== routeKey) {
-      routeLayer.clearLayers();
-      for (const r of list) {
-        if (!many) line(r.coords, { color: casing, weight: 7, opacity: 0.6 }).addTo(routeLayer);
-        line(r.coords, { color: r.color, weight: w, opacity: many ? 0.55 : 0.85 }).addTo(routeLayer);
-      }
+      spread(codes); routeLayer.clearLayers();
+      for (const r of list) line(r.coords, { color: r.color, weight: w, opacity: 1, offset: lineOffset[r.line] || 0 }).addTo(routeLayer);
     }
   } else {
-    // stop mode: every route that serves this stop, faint; the stretch each bus still has to run until the stop, bold
+    // stop mode: only the lines that serve this stop, soft; the stretch each bus still has to run until the stop, solid
     const shown = new Set();
     for (const b of buses.values()) shown.add(b.route);
     for (const r of STOPS.get(focusStop).routes) if (r.main) shown.add(r);
-    list = [...shown]; key = ['s', dark, list.map(r => r.id).sort()].join('|');
-    if (key !== routeKey) { routeLayer.clearLayers(); for (const r of list) line(r.coords, { color: r.color, weight: 3, opacity: 0.22 }).addTo(routeLayer); }
+    list = [...shown]; key = ['s', dark, lineWidth(), list.map(r => r.id).sort()].join('|');
+    if (key !== routeKey) { spread([...new Set(list.map(r => r.line))]); routeLayer.clearLayers(); for (const r of list) line(r.coords, { color: r.color, weight: 2.5, opacity: 0.35 }).addTo(routeLayer); }
   }
   // keep the full routes under the stops and the stretches to the stop
   if (key !== routeKey) { routeKey = key; routeLayer.getLayers().reverse().forEach(l => l.bringToBack()); }
@@ -321,28 +313,49 @@ function drawRoutes() {
   for (const [id, segs] of segLines) if (!live.has(id)) { for (const s of segs) { segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); } segLines.delete(id); }
   for (const id of live) {
     const b = buses.get(id), want = b.toStop || [], have = segLines.get(id) || [];
-    const ghost = !!b.info.ghost, style = { color: b.route.color, weight: selectedBus === id ? 7 : 5, opacity: 1, dashArray: ghost ? '6 8' : null };
+    const ghost = !!b.info.ghost, style = { color: b.route.color, weight: lineWidth() + (selectedBus === id ? 2 : 0), opacity: 1, dashArray: ghost ? '2 10' : null, offset: lineOffset[b.route.line] || 0 };
     while (have.length > want.length) { const s = have.pop(); segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); }
     want.forEach((pts, i) => {
       let s = have[i];
       if (s && s.ghost !== ghost) { segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); s = null; }
       if (!s) {
-        s = have[i] = { ghost, casing: ghost ? null : line(pts, { color: casing, weight: 9, opacity: 0.7 }).addTo(segLayer), line: line(pts, style).addTo(segLayer), weight: style.weight, color: casing };
+        s = have[i] = { ghost, casing: null, line: line(pts, style).addTo(segLayer), weight: style.weight, color: casing };
         return;
       }
       if (s.casing) { s.casing.setLatLngs(pts); if (s.color !== casing) { s.casing.setStyle({ color: casing }); s.color = casing; } }
       s.line.setLatLngs(pts);
-      if (s.weight !== style.weight) { s.line.setStyle({ weight: style.weight }); s.weight = style.weight; }
+      if (s.weight !== style.weight) { s.line.setStyle({ weight: style.weight, offset: style.offset }); s.weight = style.weight; }
     });
     segLines.set(id, have);
   }
 }
 
 const stopMarkers = new Map();
-function stopStyle(id) {
-  if (id === prefs.dest) return { radius: 8, color: dark ? '#171a1e' : '#1d2024', weight: 3, fillColor: '#ffcc33', fillOpacity: 1 };
-  if (id === prefs.origin) return { radius: 7, color: dark ? '#e9ecef' : '#1d2024', weight: 4, fillColor: dark ? '#22262b' : '#fff', fillOpacity: 1 };
-  return { radius: 4.5, color: dark ? '#aab3bc' : '#6b737c', weight: 1.5, fillColor: dark ? '#22262b' : '#fff', fillOpacity: 1 };
+function stopStyle() {
+  return { radius: map.getZoom() >= 15 ? 5 : 4, color: dark ? '#ece9e2' : '#2b2d2f', weight: 2.2, fillColor: dark ? '#1f2830' : '#ffffff', fillOpacity: 1 };
+}
+// Station shapes, as in the game: each saved stop has its own, the destination of your trip is a star.
+const poly = (n, r, rot = -90, inner) => { const pts = []; for (let i = 0; i < n * (inner ? 2 : 1); i++) { const a = (rot + i * 360 / (n * (inner ? 2 : 1))) * Math.PI / 180, rr = inner && i % 2 ? inner : r; pts.push((13 + rr * Math.cos(a)).toFixed(2) + ' ' + (13 + rr * Math.sin(a)).toFixed(2)); } return `<path d="M${pts.join('L')}Z"/>`; };
+const SHAPE_SVG = {
+  circle: '<circle cx="13" cy="13" r="8.5"/>', square: '<rect x="5" y="5" width="16" height="16"/>', triangle: poly(3, 10.5, -90),
+  diamond: poly(4, 10.5, -90), pentagon: poly(5, 9.8, -90), hexagon: poly(6, 9.5, 0), star: poly(5, 11, -90, 5),
+  cross: '<path d="M10 4h6v6h6v6h-6v6h-6v-6H4v-6h6z"/>',
+};
+const SHAPES = ['square', 'triangle', 'diamond', 'pentagon', 'cross', 'hexagon'];
+function shapeFor(id) {
+  const i = prefs.favs.indexOf(id);
+  if (i >= 0) return SHAPES[i % SHAPES.length];
+  return id === prefs.dest ? 'star' : id === prefs.origin ? 'circle' : null;
+}
+const shapeSvg = (shape, cls = 'shape') => shape ? `<svg class="${cls}" viewBox="0 0 26 26" aria-hidden="true">${SHAPE_SVG[shape]}</svg>` : '';
+const shapeLayer = L.layerGroup().addTo(map);
+function drawShapes() {
+  shapeLayer.clearLayers();
+  for (const id of new Set([...prefs.favs, prefs.origin, prefs.dest])) {
+    const s = STOPS.get(id); if (!s || id === focusStop) continue;
+    L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: shapeSvg(shapeFor(id), 'stn') }), zIndexOffset: 500, keyboard: false, title: s.name })
+      .on('click', () => enterStop(id)).addTo(shapeLayer);
+  }
 }
 for (const s of STOPS.values()) {
   const m = L.circleMarker([s.lat, s.lon], { ...stopStyle(s.id), renderer: canvas });
@@ -356,23 +369,24 @@ function collectStopRouteStops() { stopRouteStops = new Set(); for (const b of b
 function refreshStops() {
   const z = map.getZoom(), bounds = map.getBounds().pad(0.2);
   for (const [id, m] of stopMarkers) {
-    const s = STOPS.get(id), special = id === prefs.origin || id === prefs.dest;
+    const s = STOPS.get(id), special = false;
     let visible;
     if (mode === 'stop') visible = special || (z >= 14 && bounds.contains([s.lat, s.lon]) && stopRouteStops.has(id));
     else visible = special || (bounds.contains([s.lat, s.lon]) && ((z >= 14 && [...s.lines].some(l => sel.has(l))) || z >= 16));
-    if (id === focusStop) visible = false;
-    if (visible && !stopLayer.hasLayer(m)) { m.setStyle(stopStyle(id)); stopLayer.addLayer(m); }
+    if (id === focusStop || shapeFor(id)) visible = false;
+    if (visible && !stopLayer.hasLayer(m)) { m.setStyle(stopStyle()); stopLayer.addLayer(m); }
     if (!visible && stopLayer.hasLayer(m)) stopLayer.removeLayer(m);
   }
 }
 map.on('zoomend moveend', refreshStops);
-map.on('zoomend', () => { restyleBuses(); if (mode === 'explore') drawRoutes(); else declutter(); });
+map.on('zoomend', () => { for (const m of stopMarkers.values()) m.setStyle(stopStyle()); });
+map.on('zoomend', () => { restyleBuses(); drawRoutes(); if (mode === 'stop') declutter(); });
 
 // ---------- line picker ----------
 function renderLinesPill() {
-  const list = [...sel];
-  document.getElementById('linesSw').innerHTML = list.slice(0, 4).map(l => `<i style="background:${LINE_COLORS[l]}"></i>`).join('');
-  document.getElementById('linesTxt').textContent = list.length === LINES.length ? 'Todas' : list.length === 0 ? 'Ningunha' : list.length <= 2 ? list.join(', ') : prefs.sel === null ? 'As miñas liñas' : `${list.length} liñas`;
+  const list = [...sel], shown = list.length > 7 ? list.slice(0, 6) : list;
+  document.getElementById('linesSw').innerHTML = shown.map(l => `<i style="background:${LINE_COLORS[l]}"></i>`).join('') + (list.length > shown.length ? `<i class="more">+${list.length - shown.length}</i>` : '');
+  document.getElementById('linesTxt').textContent = list.length === LINES.length ? 'Todas' : list.length === 0 ? 'Ningunha' : prefs.sel === null ? 'As miñas liñas' : list.length <= 2 ? list.join(', ') : `${list.length} liñas`;
 }
 function renderPicker() {
   const q = norm(document.getElementById('pkSearch').value.trim());
@@ -403,11 +417,6 @@ document.getElementById('zin').onclick = () => map.zoomIn();
 document.getElementById('zout').onclick = () => map.zoomOut();
 document.getElementById('recenter').onclick = () => { follow = null; if (mode === 'stop') fitStop(); else if (hasTrip()) fitTrip(); else map.setView([42.22, -8.72], 13); };
 document.getElementById('locBtn').onclick = locate;
-document.getElementById('themeBtn').onclick = () => {
-  const order = ['auto', 'light', 'dark'];
-  prefs.theme = order[(order.indexOf(prefs.theme || 'auto') + 1) % 3]; savePrefs(); applyTheme();
-  toast(prefs.theme === 'auto' ? 'Tema automático, coma o teu sistema' : prefs.theme === 'light' ? 'Tema claro' : 'Tema escuro');
-};
 renderThemeBtn();
 document.getElementById('tripPill').onclick = () => openEditor('origin');
 const hasTrip = () => !!(prefs.origin && prefs.dest);
@@ -542,12 +551,12 @@ function busIcon(b) {
     return L.divIcon({ className: '', iconSize: null, iconAnchor: [24, 14], html });
   }
   const mine = follow === b.id || (heroBus && heroBus.id === b.id);
-  // size follows the zoom so a whole-city view stays readable
-  const z = map.getZoom(), size = mine ? 40 : z <= 12 ? 18 : z === 13 ? 24 : z === 14 ? 28 : 32;
-  const label = size >= 24 || mine ? r.line : '';
-  const fs = Math.max(8, Math.round(size * (r.line.length > 3 ? 0.28 : r.line.length > 2 ? 0.32 : 0.36)));
-  return L.divIcon({ className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
-    html: `<div class="busm${mine ? ' mine' : ''}" style="background:${r.color};color:${fg};font-size:${fs}px;width:${size}px;height:${size}px;border-width:${size < 24 ? 2 : 3}px">${label}</div>` });
+  const w = Math.max(32, 16 + 7.5 * r.line.length), a = (b.heading || 0) * Math.PI / 180;
+  // where the nose starts: the edge of the carriage in that direction
+  const h = Math.min(Math.abs(Math.cos(a)) > 0.01 ? w / 2 / Math.abs(Math.cos(a)) : 99, Math.abs(Math.sin(a)) > 0.01 ? 11 / Math.abs(Math.sin(a)) : 99) - 1;
+  const nose = b.heading === undefined ? '' : `<svg class="nose" viewBox="-40 -40 80 80" style="transform:rotate(${b.heading}deg)"><path d="M${(h + 8).toFixed(1)} 0L${h.toFixed(1)} -6.5V6.5Z" fill="${r.color}"/></svg>`;
+  return L.divIcon({ className: '', iconSize: [w, 22], iconAnchor: [w / 2, 11],
+    html: `<div class="car${mine ? ' mine' : ''}" style="background:${r.color};color:${fg};min-width:${w}px">${nose}${r.line}</div>` });
 }
 // Each bus marker is its own DOM layer, so: rebuild its icon only when it looks different,
 // keep off-screen buses off the map, and only move a marker when it moves at least half a pixel.
@@ -642,6 +651,11 @@ setInterval(() => {
       const p = map.latLngToLayerPoint(ll), q = b.px;
       if (q && Math.abs(p.x - q.x) < 0.5 && Math.abs(p.y - q.y) < 0.5) { b.marker._latlng = ll; continue; }
       b.px = p;
+      // which way it goes, in steps of 45°: the icon only changes when the direction does
+      if (b.onMap && mode === 'explore') {
+        const a = map.latLngToLayerPoint(pointAt(b.route, Math.min(b.shown + 40, b.route.length))), deg = Math.round(Math.atan2(a.y - p.y, a.x - p.x) * 180 / Math.PI / 45) * 45;
+        if (deg !== b.heading && (a.x !== p.x || a.y !== p.y)) { b.heading = deg; setBusIcon(b); }
+      }
     }
     placeBus(b, ll);
   }
@@ -665,7 +679,8 @@ function enterStop(id) {
   document.getElementById('finder').hidden = true;
   const s = STOPS.get(id);
   if (focusMarker) map.removeLayer(focusMarker);
-  focusMarker = L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 11], html: '<div class="stopmark"></div>' }), zIndexOffset: 2000, keyboard: false }).addTo(map);
+  focusMarker = L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', iconSize: [34, 34], iconAnchor: [17, 17], html: shapeSvg(shapeFor(id) || 'circle', 'stn big') }), zIndexOffset: 2000, keyboard: false }).addTo(map);
+  drawShapes();
   renderStopPanel(true); syncUrl();
   drawRoutes(); refreshStops();
   results.delete(id);
@@ -675,7 +690,7 @@ function exitStop() {
   if (mode !== 'stop') return;
   mode = 'explore'; focusStop = null; selectedBus = null;
   if (focusMarker) { map.removeLayer(focusMarker); focusMarker = null; }
-  clearBuses();
+  clearBuses(); drawShapes();
   document.getElementById('stopPanel').hidden = true;
   document.getElementById('sheet').hidden = false;
   renderTripText(); renderHome(); syncUrl();
@@ -691,6 +706,21 @@ function selectArrival(busId) {
   const b = buses.get(busId);
   if (b && selectedBus) map.flyTo(b.marker.getLatLng(), Math.max(map.getZoom(), 15), { duration: 0.6 });
   restyleBuses(); drawRoutes(); renderStopPanel(); declutter();
+}
+// The line drawn straight: the last stops before yours and where the bus is between them.
+function strip(f, b) {
+  const r = f.base || f.r || (f.lapOf && f.lapOf.base); if (!r || !r.stopById.has(focusStop)) return '';
+  const i = r.stops.findIndex(x => x.id === focusStop), st = r.stops.slice(Math.max(0, i - 4), i + 1); if (st.length < 2) return '';
+  const W = 300, d0 = st[0].d, d1 = st[st.length - 1].d, X = d => 10 + (d - d0) / (d1 - d0 || 1) * W, c = r.color;
+  let busX = null, far = false;
+  if (b && !f.noGps) { const along = (f.chain || []).length > 1 ? -1 : b.shown; if (along < d0) { busX = 10; far = true; } else busX = X(Math.min(along, d1)); }
+  const short = n => n.replace(/^(Rúa|Avenida|Avda\.|Praza|Estrada|Camiño)\s+(d[aeo]s?\s+)?/i, '');
+  return `<svg class="strip" viewBox="0 0 320 46" preserveAspectRatio="xMinYMid meet" aria-hidden="true">
+    ${far ? `<path d="M0 12H10" stroke="${c}" stroke-width="6" stroke-dasharray="2 4"/>` : ''}<path d="M10 12H${10 + W}" stroke="${c}" stroke-width="6" stroke-linecap="round" opacity="${f.noGps ? 0.4 : 1}"/>
+    ${st.slice(0, -1).map(x => `<circle class="st" cx="${X(x.d).toFixed(1)}" cy="12" r="5"/>`).join('')}
+    <g transform="translate(${10 + W},12)">${SHAPE_SVG[shapeFor(focusStop) || 'circle'].replace(/^<(\w+)/, '<$1 class="end" transform="scale(.85) translate(-13,-13)"')}</g>
+    ${busX !== null ? `<g transform="translate(${busX.toFixed(1)},12)"><rect x="-12" y="-7.5" width="24" height="15" rx="3" fill="${c}" stroke="var(--panel)" stroke-width="1.5"/><circle cx="-4.5" r="2" fill="#fff"/><circle cx="1.5" r="2" fill="#fff"/><rect x="5.5" y="-2" width="4" height="4" fill="#fff"/></g>` : ''}
+    <text x="4" y="38">${far ? 'Ven de máis lonxe' : short(st[0].name)}</text><text class="you" x="${10 + W}" y="38" text-anchor="end">${f.noGps ? 'Aínda sen saír' : 'A túa parada'}</text></svg>`;
 }
 function renderStopPanel(loading) {
   const el = document.getElementById('stopPanel'); el.hidden = false;
@@ -708,12 +738,12 @@ function renderStopPanel(loading) {
       const at = hhmm(new Date(now + f.min * 60000));
       const detail = f.noGps ? `Programado ás ${at}` + (f.head ? `, sae de ${shortName(f.head)}` : '') + (f.ghost ? '' : ', aínda sen GPS')
         : `Chega ás ${at}, a ${fmtDist(f.metros)}` + (f.lapOf ? `, na volta seguinte do bus de ${f.lapOf.min} min` : '');
-      return `<button class="arr${b && selectedBus === b.id ? ' sel' : ''}" ${b ? `data-bus="${b.id}"` : ''}>${badge(f.line)}
-        <span class="d"><b>${f.ruta}</b><span>${detail}</span></span>${whenHtml([f.min], !f.noGps)}</button>`;
+      return `<button class="arr${b && selectedBus === b.id ? ' sel' : ''}" ${b ? `data-bus="${b.id}"` : ''}><span class="ah">${badge(f.line)}
+        <span class="d"><b>${f.ruta}</b><span>${detail}</span></span>${whenHtml([f.min], !f.noGps)}</span>${strip(f, b)}</button>`;
     }).join('');
   }
   const fav = prefs.favs.includes(s.id);
-  el.innerHTML = `<div class="sp-head"><div class="nm"><b>${s.name}</b><div class="meta"><span>Parada ${s.id}</span>${[...s.lines].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })).map(l => badge(l, true)).join('')}</div></div>
+  el.innerHTML = `<div class="sp-head">${shapeSvg(shapeFor(s.id) || 'circle')}<div class="nm"><b>${s.name}</b><div class="meta">Parada ${s.id}, ${s.lines.size} liñas</div></div>
       <button class="star" id="spShare" aria-label="Compartir esta parada" title="Compartir esta parada">${SHARE}</button><button class="star" id="spStar" aria-pressed="${fav}" aria-label="${fav ? 'Quitar das miñas paradas' : 'Gardar nas miñas paradas'}" title="${fav ? 'Quitar das miñas paradas' : 'Gardar nas miñas paradas'}">${STAR}</button><button class="x" id="spClose" aria-label="Pechar a parada">✕</button></div>
     <div class="list">${rows}</div>
     <div class="stopacts"><button class="btn" id="spOrig">Subo aquí</button><button class="btn" id="spDest">Baixo aquí</button><button class="btn" id="spFit">Ver os buses</button></div>`;
@@ -795,7 +825,14 @@ function renderFresh() {
   el.classList.toggle('err', lastErr && (age === null || age > 90)); el.classList.toggle('stale', age !== null && age > 90 && !lastErr);
   txt.textContent = age === null ? (lastErr ? 'Sen conexión' : 'Conectando…') : age < 10 ? 'En directo' : age < 90 ? `Hai ${age} s` : `Hai ${Math.round(age / 60)} min`;
 }
-setInterval(renderFresh, 5000);
+// the clock in the corner, like the game's: weekday, time and a dial
+const DAYS = ['DOM', 'LUN', 'MAR', 'MÉR', 'XOV', 'VEN', 'SÁB'];
+function renderClock() {
+  const d = new Date(), m = d.getMinutes(), h = d.getHours() % 12 + m / 60, hand = (deg, len) => { const a = (deg - 90) * Math.PI / 180; return `M16 16L${(16 + len * Math.cos(a)).toFixed(1)} ${(16 + len * Math.sin(a)).toFixed(1)}`; };
+  document.getElementById('clockTxt').textContent = DAYS[d.getDay()] + ' ' + hhmm(d);
+  document.getElementById('clockHand').setAttribute('d', hand(m * 6, 9)); document.getElementById('clockHand2').setAttribute('d', hand(h * 30, 5.5));
+}
+setInterval(() => { renderFresh(); renderClock(); }, 5000);
 addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   for (const id of ['editor', 'finder', 'picker', 'about']) if (!document.getElementById(id).hidden) { document.getElementById(id).hidden = true; return; }
@@ -829,7 +866,7 @@ function toggleFav(id) {
   if (adding) { prefs.favs.push(id); prefs.welcomed = true; } else prefs.favs.splice(i, 1);
   savePrefs(); toast(adding ? `${shortName(stopName(id))} gardada nas miñas paradas` : `${shortName(stopName(id))} quitada das miñas paradas`);
   if (adding && !results.has(id)) fetchStop(id).then(l => { results.set(id, l); renderHome(); }, () => {});
-  refreshAutoLines(); renderHome();
+  refreshAutoLines(); renderHome(); drawShapes(); refreshStops();
 }
 function renderHome() {
   const box = document.getElementById('favs'), has = prefs.favs.length > 0, trip = !!(prefs.origin || prefs.dest);
@@ -852,7 +889,7 @@ function renderHome() {
       : !deps.length ? `<div class="none">Ningún bus na próxima hora e media.</div>`
       : deps.slice(0, 4).map(d => `<div class="dep">${badge(d.line)}<span class="to"><b>${d.ruta}</b><span>${d.mins[0] <= 0 ? 'Na parada' : d.live ? `Chega ás ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}` : `Programado, ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}`}</span></span>${whenHtml(d.mins, d.live)}</div>`).join('')
         + (deps.length > 4 ? `<button class="btn link" data-open="${s.id}">${deps.length - 4} máis nesta parada</button>` : '');
-    return `<section class="fav"><div class="fav-h"><button class="fav-open" data-open="${s.id}"><span class="nm"><b>${s.name}</b><span>Parada ${s.id}${dist}</span></span>${CHEVRON}</button>
+    return `<section class="fav"><div class="fav-h"><button class="fav-open" data-open="${s.id}">${shapeSvg(shapeFor(s.id))}<span class="nm"><b>${s.name}</b><span>Parada ${s.id}${dist}</span></span>${CHEVRON}</button>
       <button class="star" data-star="${s.id}" aria-pressed="true" aria-label="Quitar ${s.name} das miñas paradas">${STAR}</button></div>${rows}</section>`;
   }).join('') + `<button class="add" id="favAdd">+ ${has ? 'Engadir outra parada' : 'Engadir unha parada'}</button>`;
   box.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openStop(+b.dataset.open));
@@ -879,7 +916,8 @@ async function shareStop(s) {
 function syncUrl() { history.replaceState(null, '', mode === 'stop' ? '?parada=' + focusStop : location.pathname); }
 
 // ---------- about ----------
-document.getElementById('infoBtn').onclick = () => { document.getElementById('about').hidden = false; };
+document.getElementById('infoBtn').onclick = () => { document.getElementById('about').hidden = false; renderThemeBtn(); };
+document.querySelectorAll('#about [data-theme]').forEach(b => b.onclick = () => { prefs.theme = b.dataset.theme; savePrefs(); applyTheme(); });
 document.getElementById('abClose').onclick = () => { document.getElementById('about').hidden = true; };
 document.getElementById('about').addEventListener('click', e => { if (e.target.id === 'about') e.target.hidden = true; });
 
@@ -922,7 +960,7 @@ document.getElementById('finder').addEventListener('click', e => {
   const op = e.target.closest('.open'); if (op) { document.getElementById('finder').hidden = true; openStop(+op.dataset.id); }
 });
 
-function afterTripChange() { refreshStops(); renderTripText(); renderHome(); refreshAutoLines(); if (mode === 'explore') { fitTrip(); renderHero(); } restartPolling(true); }
+function afterTripChange() { drawShapes(); refreshStops(); renderTripText(); renderHome(); refreshAutoLines(); if (mode === 'explore') { fitTrip(); renderHero(); } restartPolling(true); }
 
 /*TRIPBLOCK*/
 
@@ -959,7 +997,7 @@ document.getElementById('edResults').addEventListener('click', e => { const b = 
 // ---------- start ----------
 let viewStop = prefs.dest;
 if (prefs.sheetMin) setSheet(true);
-renderTripText(); renderHome(); renderFresh(); renderLinesPill(); drawRoutes(); refreshStops();
+renderTripText(); renderHome(); renderFresh(); renderClock(); renderLinesPill(); drawRoutes(); drawShapes(); refreshStops();
 // opened from a stop link
 const linked = +new URLSearchParams(location.search).get('parada');
 if (STOPS.has(linked)) { fitted = true; openStop(linked); } else tick();
