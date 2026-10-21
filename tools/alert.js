@@ -3,7 +3,7 @@ let alertOn = false, alerted = null, audio;
 function beep() { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); const o = audio.createOscillator(), g = audio.createGain(); o.connect(g); g.connect(audio.destination); o.frequency.value = 880; g.gain.setValueAtTime(0.2, audio.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.6); o.start(); o.stop(audio.currentTime + 0.6); } catch (e) {} }
 function toggleAlert() {
   alertOn = !alertOn; alerted = null;
-  if (alertOn) { try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {} try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} toast('Te aviso cuando falten 5 minutos'); }
+  if (alertOn) { try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {} try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} toast('Te aviso cuando falten 5 minutos. Deja la web abierta'); }
   renderHero();
 }
 function checkAlert(t) {
