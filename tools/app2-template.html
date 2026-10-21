@@ -555,11 +555,10 @@ function setBusIcon(b) {
   const ic = busIcon(b); if (ic.options.html !== b.iconHtml) { b.iconHtml = ic.options.html; b.marker.setIcon(ic); }
   if (b.dot) b.dot.setStyle(dotStyle(b));
 }
-// With the whole city in view there can be 200+ buses: there they are plain dots on their own canvas, not DOM markers.
-map.createPane('busDots').style.zIndex = 450;
-const busCanvas = L.canvas({ pane: 'busDots', padding: 0.2, tolerance: 5 });
+// With the whole city in view there can be 200+ buses: there they are plain dots, not DOM markers. They share the canvas
+// of routes and stops: a canvas of their own on top would swallow the taps meant for the stops.
 const useDots = () => mode === 'explore' && (map.getZoom() <= 12 || (map.getZoom() === 13 && buses.size > 60));
-const dotStyle = b => ({ radius: map.getZoom() <= 12 ? 4.5 : 6, color: dark ? '#0f171c' : '#ffffff', weight: 1.5, fillColor: b.route.color, fillOpacity: 1, renderer: busCanvas });
+const dotStyle = b => ({ radius: map.getZoom() <= 12 ? 4.5 : 6, color: dark ? '#0f171c' : '#ffffff', weight: 1.5, fillColor: b.route.color, fillOpacity: 1, renderer: canvas });
 let viewBounds = null;
 function placeBus(b, ll) {
   if (ll) b.marker.setLatLng(ll); else ll = b.marker.getLatLng();
