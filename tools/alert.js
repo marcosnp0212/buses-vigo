@@ -23,7 +23,7 @@ async function pushOn(t) {
   const reg = await navigator.serviceWorker.ready;
   pushSub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PUSH.key) });
   const res = await fetch(PUSH.url + '/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sub: pushSub.toJSON(), stop: prefs.origin, line: t.line, lead: 5, minutes: Math.max(30, t.min + 30), lang: LANG, stopName: shortName(stopName(prefs.origin)) }) });
+    body: JSON.stringify({ sub: pushSub.toJSON(), stop: prefs.origin, line: t.line, lead: 5, minutes: Math.max(30, t.min + 30), stopName: shortName(stopName(prefs.origin)) }) });
   return res.ok;
 }
 function pushOff() {
@@ -34,15 +34,15 @@ function pushOff() {
 async function toggleAlert() {
   alertOn = !alertOn; alerted = null;
   renderHero();
-  if (!alertOn) { pushOff(); toast(T`Aviso quitado`); return; }
+  if (!alertOn) { pushOff(); toast('Aviso quitado'); return; }
   try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
   let remote = false;
   try { remote = !!heroTrip && await pushOn(heroTrip); } catch (e) {}
-  if (remote) toast(T`Te aviso cuando falten 5 minutos, aunque cierres la web`);
-  else if (PUSH.url && iosBrowser()) toast(T`Para recibir el aviso con la web cerrada, añádela a la pantalla de inicio. Ahora, déjala abierta`);
+  if (remote) toast('Avísote cando falten 5 minutos, aínda que peches a web');
+  else if (PUSH.url && iosBrowser()) toast('Para recibir o aviso coa web pechada, engádea á pantalla de inicio. Agora, déixaa aberta');
   else {
     try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
-    toast(T`Te aviso cuando falten 5 minutos. Deja la web abierta`);
+    toast('Avísote cando falten 5 minutos. Deixa a web aberta');
   }
 }
 function checkAlert(t) {
@@ -50,7 +50,7 @@ function checkAlert(t) {
   // one alert per bus: identify it by line and expected arrival (5-minute slot), not by its position
   const key = t.line + ":" + Math.round((Date.now() + t.min * 60000) / 300000);
   if (alerted === key) return; alerted = key;
-  const msg = T`Tu ${t.line} llega a ${shortName(stopName(prefs.origin))} en ${t.min} min`;
-  toast(msg); beep(); notify(T`Sal ya`, msg);
+  const msg = `O teu ${t.line} chega a ${shortName(stopName(prefs.origin))} en ${t.min} min`;
+  toast(msg); beep(); notify('Sae xa', msg);
   pushOff();   // already told: the server doesn't need to
 }

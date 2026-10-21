@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="gl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Buses Vigo</title>
-<meta name="description" content="Cuándo llega tu bus en Vigo, en tiempo real: tus paradas de un vistazo, el mapa con todos los buses de Vitrasa y aviso antes de salir.">
+<meta name="description" content="Cando chega o teu bus en Vigo, en tempo real: as túas paradas dunha ollada, o mapa con todos os buses de Vitrasa e aviso antes de saír.">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#172128" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
@@ -237,9 +237,6 @@ button { -webkit-tap-highlight-color: transparent; }
 .about { gap: 14px; }
 .ab-head { display: flex; align-items: center; justify-content: space-between; }
 .ab-head h2 { margin: 0; font: 700 26px/1.1 var(--sign); }
-.seg { display: flex; gap: 6px; background: var(--raise); padding: 4px; border-radius: 12px; }
-.seg .btn { flex: 1; min-height: 40px; background: none; }
-.seg .btn[aria-pressed="true"] { background: var(--sheet); color: var(--ink); box-shadow: var(--shadow-float); }
 .ab-body { overflow: auto; overscroll-behavior: contain; }
 .ab-body p { margin: 0 0 10px; color: var(--muted); max-width: 60ch; }
 .ab-body h3 { margin: 16px 0 4px; font: 600 17px var(--text); }
@@ -277,28 +274,28 @@ button { -webkit-tap-highlight-color: transparent; }
 <div id="map" role="application" aria-label="Mapa de buses de Vigo"></div>
 
 <div class="top">
-  <button class="search" id="searchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><span>Buscar una parada</span></button>
-  <button class="lines-pill" id="linesPill" aria-label="Elegir qué líneas ver en el mapa"><span class="sw" id="linesSw"></span><span id="linesTxt">Líneas</span></button>
+  <button class="search" id="searchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><span>Buscar unha parada</span></button>
+  <button class="lines-pill" id="linesPill" aria-label="Escoller que liñas ver no mapa"><span class="sw" id="linesSw"></span><span id="linesTxt">Liñas</span></button>
 </div>
 
 <div class="ctl">
-  <button id="zin" aria-label="Acercar">+</button>
-  <button id="zout" aria-label="Alejar">−</button>
-  <button id="locBtn" aria-label="Mi ubicación"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg></button>
-  <button id="recenter" aria-label="Encuadrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+  <button id="zin" aria-label="Achegar">+</button>
+  <button id="zout" aria-label="Afastar">−</button>
+  <button id="locBtn" aria-label="A miña localización"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg></button>
+  <button id="recenter" aria-label="Encadrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
   <button id="themeBtn" aria-label="Tema"></button>
-  <button id="infoBtn" aria-label="Acerca de Buses Vigo e idioma"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg></button>
+  <button id="infoBtn" aria-label="Acerca de Buses Vigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg></button>
 </div>
 
-<section class="sheet" id="sheet" aria-label="Mis paradas">
+<section class="sheet" id="sheet" aria-label="As miñas paradas">
   <button class="grab" id="sheetGrab" aria-expanded="true">
-    <span class="hrow"><h1 id="sheetTitle">Mis paradas</h1><span class="fresh" id="fresh"><i></i><span id="freshTxt">Conectando…</span></span></span>
+    <span class="hrow"><h1 id="sheetTitle">As miñas paradas</h1><span class="fresh" id="fresh"><i></i><span id="freshTxt">Conectando…</span></span></span>
   </button>
   <div class="sheet-body" id="sheetBody">
     <div class="trip" id="stack" hidden>
-      <div class="trip-row"><button class="trip-pill" id="tripPill" title="Cambiar mi trayecto"><span class="pins"><i></i><i></i></span><span class="t" id="tripText">…</span></button><button class="trip-x" id="tripClear" aria-label="Quitar trayecto" title="Quitar trayecto">✕</button></div>
-      <section class="hero" id="hero" aria-live="polite"><div class="empty">Consultando tu parada…</div></section>
-      <div id="nextCard"><h2 class="subhead">Después</h2><div id="nextList"></div></div>
+      <div class="trip-row"><button class="trip-pill" id="tripPill" title="Cambiar a miña viaxe"><span class="pins"><i></i><i></i></span><span class="t" id="tripText">…</span></button><button class="trip-x" id="tripClear" aria-label="Quitar a viaxe" title="Quitar a viaxe">✕</button></div>
+      <section class="hero" id="hero" aria-live="polite"><div class="empty">Consultando a túa parada…</div></section>
+      <div id="nextCard"><h2 class="subhead">Despois</h2><div id="nextList"></div></div>
     </div>
     <div id="favs"></div>
   </div>
@@ -308,56 +305,55 @@ button { -webkit-tap-highlight-color: transparent; }
 <section class="buscard" id="busCard" hidden aria-live="polite"></section>
 
 <div class="overlay" id="finder" hidden>
-  <div class="panel" role="dialog" aria-label="Buscar una parada">
-    <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><input id="fdSearch" type="search" placeholder="Nombre o número de parada" autocomplete="off" enterkeyhint="search"></label>
-    <div class="chips"><button class="btn" id="fdNear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg>Cerca de mí</button><button class="btn" id="fdTrip">Planear mi trayecto</button></div>
+  <div class="panel" role="dialog" aria-label="Buscar unha parada">
+    <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><input id="fdSearch" type="search" placeholder="Nome ou número da parada" autocomplete="off" enterkeyhint="search"></label>
+    <div class="chips"><button class="btn" id="fdNear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg>Preto de min</button><button class="btn" id="fdTrip">Planear a miña viaxe</button></div>
     <div class="results" id="fdResults"></div>
-    <div class="foot"><span>Toca la estrella para guardar una parada</span><button class="btn pri" id="fdClose">Listo</button></div>
+    <div class="foot"><span>Toca a estrela para gardar unha parada</span><button class="btn pri" id="fdClose">Feito</button></div>
   </div>
 </div>
 
 <div class="overlay" id="picker" hidden>
-  <div class="panel" role="dialog" aria-label="Elegir líneas">
-    <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><input id="pkSearch" type="search" placeholder="Busca una línea: 15C, Universidade, Samil…" autocomplete="off"></label>
+  <div class="panel" role="dialog" aria-label="Escoller liñas">
+    <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><input id="pkSearch" type="search" placeholder="Busca unha liña: 15C, Universidade, Samil…" autocomplete="off"></label>
     <div class="chips">
-      <button class="btn" id="pkMine">Las de mis paradas</button>
+      <button class="btn" id="pkMine">As das miñas paradas</button>
       <button class="btn" id="pkAll">Todas</button>
-      <button class="btn" id="pkNone">Ninguna</button>
+      <button class="btn" id="pkNone">Ningunha</button>
     </div>
     <div class="pkgrid" id="pkGrid"></div>
-    <div class="foot"><span id="pkInfo"></span><button class="btn pri" id="pkClose">Listo</button></div>
+    <div class="foot"><span id="pkInfo"></span><button class="btn pri" id="pkClose">Feito</button></div>
   </div>
 </div>
 
 <div class="overlay" id="editor" hidden>
-  <div class="panel" role="dialog" aria-label="Cambiar trayecto">
+  <div class="panel" role="dialog" aria-label="Cambiar a viaxe">
     <div class="edrow">
       <div class="edstops">
         <button class="edbtn" id="edOriginBtn"><span>Subo en</span><b id="edOrigin"></b></button>
-        <button class="edbtn" id="edDestBtn"><span>Bajo en</span><b id="edDest"></b></button>
+        <button class="edbtn" id="edDestBtn"><span>Baixo en</span><b id="edDest"></b></button>
       </div>
-      <div class="edside"><button class="swap" id="edSwap" aria-label="Invertir trayecto" title="Invertir trayecto">⇅</button><button class="swap" id="edClearTop" aria-label="Quitar trayecto" title="Quitar trayecto">✕</button></div>
+      <div class="edside"><button class="swap" id="edSwap" aria-label="Inverter a viaxe" title="Inverter a viaxe">⇅</button><button class="swap" id="edClearTop" aria-label="Quitar a viaxe" title="Quitar a viaxe">✕</button></div>
     </div>
     <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><input id="edSearch" type="search" autocomplete="off"></label>
-    <div class="chips"><button class="btn" id="edNear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg>Cerca de mí</button></div>
+    <div class="chips"><button class="btn" id="edNear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg>Preto de min</button></div>
     <div class="results" id="edResults"></div>
-    <div class="foot"><button class="btn link" id="edClear">Quitar trayecto</button><button class="btn pri" id="edClose">Listo</button></div>
+    <div class="foot"><button class="btn link" id="edClear">Quitar a viaxe</button><button class="btn pri" id="edClose">Feito</button></div>
   </div>
 </div>
 <div class="overlay" id="about" hidden>
   <div class="panel about" role="dialog" aria-label="Acerca de Buses Vigo">
-    <div class="ab-head"><h2>Buses Vigo</h2><button class="x" id="abClose" aria-label="Cerrar">✕</button></div>
-    <div class="seg" role="group" aria-label="Idioma"><button class="btn" data-lang="es">Castellano</button><button class="btn" data-lang="gl">Galego</button></div>
+    <div class="ab-head"><h2>Buses Vigo</h2><button class="x" id="abClose" aria-label="Pechar">✕</button></div>
     <div class="ab-body">
-      <p>Cuándo llega tu bus, de un vistazo. Proyecto personal, sin relación con Vitrasa ni con el Concello de Vigo.</p>
-      <h3>De dónde salen los datos</h3>
-      <p>Los tiempos de llegada vienen de la API abierta del Concello de Vigo. Las líneas, las paradas y los horarios, del GTFS oficial de Vitrasa, que se actualiza cada semana.</p>
-      <p>La posición de cada bus en el mapa es una estimación hecha con la distancia que da la API hasta cada parada: no es el GPS del vehículo.</p>
-      <h3>Tus datos</h3>
-      <p>Tus paradas y preferencias se guardan solo en este dispositivo. Si activas los avisos con la web cerrada, la parada y la línea se envían al servidor de avisos solo para avisarte, y se borran después.</p>
-      <h3>Tenerla como una app</h3>
-      <p>En el menú del navegador, elige «Añadir a pantalla de inicio».</p>
-      <p class="fine">Mapa © OpenStreetMap y OpenFreeMap.</p>
+      <p>Cando chega o teu bus, dunha ollada. Proxecto persoal, sen relación con Vitrasa nin co Concello de Vigo.</p>
+      <h3>De onde saen os datos</h3>
+      <p>Os tempos de chegada veñen da API aberta do Concello de Vigo. As liñas, as paradas e os horarios, do GTFS oficial de Vitrasa, que se actualiza cada semana.</p>
+      <p>A posición de cada bus no mapa é unha estimación feita coa distancia que dá a API ata cada parada: non é o GPS do vehículo.</p>
+      <h3>Os teus datos</h3>
+      <p>As túas paradas e preferencias gárdanse só neste dispositivo. Se activas os avisos coa web pechada, a parada e a liña envíanse ao servidor de avisos só para avisarte, e bórranse despois.</p>
+      <h3>Tela coma unha app</h3>
+      <p>No menú do navegador, escolle «Engadir á pantalla de inicio».</p>
+      <p class="fine">Mapa © OpenStreetMap e OpenFreeMap.</p>
     </div>
   </div>
 </div>
@@ -370,7 +366,7 @@ button { -webkit-tap-highlight-color: transparent; }
 const loadData = f => fetch(`data/${f}.json?v=be53a1b6fc`).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); });
 let NET, SCHED;
 try { [NET, SCHED] = await Promise.all([loadData('net'), loadData('sched')]); }
-catch (e) { document.getElementById('favs').innerHTML = '<div class="empty">' + (/^gl\b/i.test(navigator.language) ? 'Non se puideron cargar as liñas. Comproba a túa conexión e recarga a páxina.' : 'No se pudieron cargar las líneas. Comprueba tu conexión y recarga la página.') + '</div>'; throw e; }
+catch (e) { document.getElementById('favs').innerHTML = '<div class="empty">Non se puideron cargar as liñas. Comproba a túa conexión e recarga a páxina.</div>'; throw e; }
 function decodePolyline(s) {
   const out = []; let i = 0, lat = 0, lon = 0;
   const next = () => { let v = 0, sh = 0, b; do { b = s.charCodeAt(i++) - 63; v |= (b & 31) << sh; sh += 5; } while (b >= 32); return v & 1 ? ~(v >> 1) : v >> 1; };
@@ -386,187 +382,10 @@ const MAX_MIN = 35, MAX_WRAP_M = 6000, STOP_POLL_MS = 15000;
 const prefs = { origin: null, dest: null, sel: null, favs: [], welcomed: false };
 try { Object.assign(prefs, JSON.parse(localStorage.getItem('busprefs2') || '{}')); } catch (e) {}
 const savePrefs = () => { try { localStorage.setItem('busprefs2', JSON.stringify(prefs)); } catch (e) {} };
-
-// ---------- language: Spanish in the code, Galician from the dictionary in tools/gl.js ----------
-const LANG = prefs.lang || (/^gl\b/i.test(navigator.language || '') ? 'gl' : 'es');
-document.documentElement.lang = LANG;
-// Galician for every text in the app. Key: the Spanish text, with {} where a value goes.
-const GL = {
-  " (aprox.)": " (aprox.)",
-  ", aún sin GPS": ", aínda sen GPS",
-  ", en la vuelta siguiente del bus de {} min": ", na volta seguinte do bus de {} min",
-  ", llegas a las {}": ", chegas ás {}",
-  ", sale de {}": ", sae de {}",
-  "A su hora": "Á súa hora",
-  "Acerca de Buses Vigo": "Acerca de Buses Vigo",
-  "Acerca de Buses Vigo e idioma": "Acerca de Buses Vigo e idioma",
-  "Acercar": "Achegar",
-  "Ahora no, solo ver el mapa": "Agora non, só ver o mapa",
-  "Alejar": "Afastar",
-  "Avisarme": "Avisarme",
-  "Aviso quitado": "Aviso quitado",
-  "Te aviso cuando falten 5 minutos, aunque cierres la web": "Avísote cando falten 5 minutos, aínda que peches a web",
-  "Para recibir el aviso con la web cerrada, añádela a la pantalla de inicio. Ahora, déjala abierta": "Para recibir o aviso coa web pechada, engádea á pantalla de inicio. Agora, déixaa aberta",
-  "Aviso activado": "Aviso activado",
-  "Añadir otra parada": "Engadir outra parada",
-  "Añadir una parada": "Engadir unha parada",
-  "Aún no ha salido: es la hora del horario de Vitrasa.": "Aínda non saíu: é a hora do horario de Vitrasa.",
-  "Bajo aquí": "Baixo aquí",
-  "Bajo en": "Baixo en",
-  "Busca una línea: 15C, Universidade, Samil…": "Busca unha liña: 15C, Universidade, Samil…",
-  "Buscando dónde estás…": "Buscando onde estás…",
-  "Buscar una parada": "Buscar unha parada",
-  "Cambiar mi trayecto": "Cambiar a miña viaxe",
-  "Cambiar trayecto": "Cambiar a viaxe",
-  "Castellano": "Castelán",
-  "Cerca de mí": "Preto de min",
-  "Cerca de ti": "Preto de ti",
-  "Cerrar": "Pechar",
-  "Cerrar parada": "Pechar a parada",
-  "Compartir esta parada": "Compartir esta parada",
-  "Conectando…": "Conectando…",
-  "Consultando la parada…": "Consultando a parada…",
-  "Consultando tu parada…": "Consultando a túa parada…",
-  "Consultando…": "Consultando…",
-  "Copia el enlace": "Copia a ligazón",
-  "Cuándo llega tu bus, de un vistazo. Proyecto personal, sin relación con Vitrasa ni con el Concello de Vigo.": "Cando chega o teu bus, dunha ollada. Proxecto persoal, sen relación con Vitrasa nin co Concello de Vigo.",
-  "De dónde salen los datos": "De onde saen os datos",
-  "Dejar de seguir": "Deixar de seguir",
-  "Después": "Despois",
-  "Elegir líneas": "Escoller liñas",
-  "Elegir mi trayecto": "Escoller a miña viaxe",
-  "Elegir qué líneas ver en el mapa": "Escoller que liñas ver no mapa",
-  "En camino": "En camiño",
-  "En directo": "En directo",
-  "En el menú del navegador, elige «Añadir a pantalla de inicio».": "No menú do navegador, escolle «Engadir á pantalla de inicio».",
-  "En la parada": "Na parada",
-  "Encuadrar": "Encadrar",
-  "Enlace copiado": "Ligazón copiada",
-  "Escribe la calle o el número que aparece en el poste de la parada.": "Escribe a rúa ou o número que aparece no poste da parada.",
-  "Esta parada no responde ahora.": "Esta parada non responde agora.",
-  "Esta parada no responde ahora. Lo reintento en unos segundos.": "Esta parada non responde agora. Volvo tentalo nuns segundos.",
-  "Este bus aún no está en el mapa": "Este bus aínda non está no mapa",
-  "Estás fuera de la red de Vitrasa": "Estás fóra da rede de Vitrasa",
-  "Falta 1 parada": "Falta 1 parada",
-  "Faltan {} paradas": "Faltan {} paradas",
-  "Galego": "Galego",
-  "Guarda las paradas que usas y aquí verás cuándo llega cada bus, sin tener que buscarlas.": "Garda as paradas que usas e aquí verás cando chega cada bus, sen ter que buscalas.",
-  "Guardada como la parada donde subes": "Gardada como a parada onde subes",
-  "Guardada como tu destino": "Gardada como o teu destino",
-  "Guardar en mis paradas": "Gardar nas miñas paradas",
-  "Hace {} min": "Hai {} min",
-  "Hace {} s": "Hai {} s",
-  "Idioma": "Idioma",
-  "Invertir trayecto": "Inverter a viaxe",
-  "La parada más cercana es {}, {}": "A parada máis próxima é {}, {}",
-  "La posición de cada bus en el mapa es una estimación hecha con la distancia que da la API hasta cada parada: no es el GPS del vehículo.": "A posición de cada bus no mapa é unha estimación feita coa distancia que dá a API ata cada parada: non é o GPS do vehículo.",
-  "Las de mis paradas": "As das miñas paradas",
-  "Listo": "Feito",
-  "Llega a las {}": "Chega ás {}",
-  "Llega a las {}, a {}": "Chega ás {}, a {}",
-  "Llegando": "Chegando",
-  "Llegando al final de la línea.": "Chegando ao final da liña.",
-  "Los tiempos de llegada vienen de la API abierta del Concello de Vigo. Las líneas, las paradas y los horarios, del GTFS oficial de Vitrasa, que se actualiza cada semana.": "Os tempos de chegada veñen da API aberta do Concello de Vigo. As liñas, as paradas e os horarios, do GTFS oficial de Vitrasa, que se actualiza cada semana.",
-  "Líneas": "Liñas",
-  "Mapa de buses de Vigo": "Mapa de buses de Vigo",
-  "Mapa © OpenStreetMap y OpenFreeMap.": "Mapa © OpenStreetMap e OpenFreeMap.",
-  "Mi ubicación": "A miña localización",
-  "Mis líneas": "As miñas liñas",
-  "Mis paradas": "As miñas paradas",
-  "Ninguna": "Ningunha",
-  "Ninguna línea coincide.": "Ningunha liña coincide.",
-  "Ninguna parada se llama así. Prueba con otra palabra o con el número del poste.": "Ningunha parada se chama así. Proba con outra palabra ou co número do poste.",
-  "Ninguno más en la próxima hora y media.": "Ningún máis na próxima hora e media.",
-  "Ningún bus en la próxima hora y media.": "Ningún bus na próxima hora e media.",
-  "Ningún bus previsto ahora mismo en esta parada.": "Ningún bus previsto agora mesmo nesta parada.",
-  "Ningún bus va hacia {} en la próxima hora y media.": "Ningún bus vai cara a {} na próxima hora e media.",
-  "No se pudo obtener tu ubicación": "Non se puido obter a túa localización",
-  "No va a tu destino": "Non vai ao teu destino",
-  "Nombre o número de parada": "Nome ou número da parada",
-  "Parada {}": "Parada {}",
-  "Paradas cerca de mí": "Paradas preto de min",
-  "Pasa a las <b>{}</b> y llegas a {} a las <b>{}</b>": "Pasa ás <b>{}</b> e chegas a {} ás <b>{}</b>",
-  "Planear mi trayecto": "Planear a miña viaxe",
-  "Por {}": "Por {}",
-  "Primero guarda alguna parada con la estrella": "Primeiro garda algunha parada coa estrela",
-  "Programado a las {}": "Programado ás {}",
-  "Programado, {}": "Programado, {}",
-  "Próximos buses en {}": "Próximos buses en {}",
-  "Quitar de mis paradas": "Quitar das miñas paradas",
-  "Quitar trayecto": "Quitar a viaxe",
-  "Quitar {} de mis paradas": "Quitar {} das miñas paradas",
-  "Sal ya": "Sae xa",
-  "Saliendo de cabecera": "Saíndo da cabeceira",
-  "Seguir este bus": "Seguir este bus",
-  "Según horario": "Segundo o horario",
-  "Siguiéndolo": "Seguíndoo",
-  "Sin conexión": "Sen conexión",
-  "Sin elegir": "Sen escoller",
-  "Sin permiso de ubicación: actívalo en los ajustes del navegador": "Sen permiso de localización: actívao nos axustes do navegador",
-  "Subo aquí": "Subo aquí",
-  "Subo en": "Subo en",
-  "Sus próximas paradas": "As súas próximas paradas",
-  "Te aviso cuando falten 5 minutos. Deja la web abierta": "Avísote cando falten 5 minutos. Deixa a web aberta",
-  "Tema": "Tema",
-  "Tema automático, como tu sistema": "Tema automático, coma o teu sistema",
-  "Tema claro": "Tema claro",
-  "Tema oscuro": "Tema escuro",
-  "Tema: automático": "Tema: automático",
-  "Tema: claro": "Tema: claro",
-  "Tema: oscuro": "Tema: escuro",
-  "Tenerla como una app": "Tela coma unha app",
-  "Toca la estrella para guardar una parada": "Toca a estrela para gardar unha parada",
-  "Todas": "Todas",
-  "Trayecto quitado": "Viaxe quitada",
-  "Tu navegador no puede darnos tu ubicación": "O teu navegador non pode darnos a túa localización",
-  "Tu parada no responde ahora. Lo reintento en unos segundos.": "A túa parada non responde agora. Volvo tentalo nuns segundos.",
-  "Tu {} llega a {} en {} min": "O teu {} chega a {} en {} min",
-  "Tus buses, de un vistazo": "Os teus buses, dunha ollada",
-  "Tus datos": "Os teus datos",
-  "Tus paradas": "As túas paradas",
-  "Tus paradas y preferencias se guardan solo en este dispositivo. Si activas los avisos con la web cerrada, la parada y la línea se envían al servidor de avisos solo para avisarte, y se borran después.": "As túas paradas e preferencias gárdanse só neste dispositivo. Se activas os avisos coa web pechada, a parada e a liña envíanse ao servidor de avisos só para avisarte, e bórranse despois.",
-  "Ver en el mapa": "Ver no mapa",
-  "Ver los buses": "Ver os buses",
-  "Ya": "Xa",
-  "Ya llega": "Xa chega",
-  "a {}": "a {}",
-  "aquí mismo": "aquí mesmo",
-  "luego {} min": "logo {} min",
-  "prog.": "prog.",
-  "tu destino": "o teu destino",
-  "tu parada": "a túa parada",
-  "ya": "xa",
-  "{} buses en el mismo punto: los tienes en la lista": "{} buses no mesmo punto: tes todos na lista",
-  "{} de {} líneas en el mapa": "{} de {} liñas no mapa",
-  "{} guardada en Mis paradas": "{} gardada nas miñas paradas",
-  "{} líneas": "{} liñas",
-  "{} min adelantado": "{} min adiantado",
-  "{} min tarde": "{} min tarde",
-  "{} más en esta parada": "{} máis nesta parada",
-  "{} quitada de Mis paradas": "{} quitada das miñas paradas",
-  "{} → elige destino": "{} → escolle destino",
-  "¿Dónde bajas? Calle o número de parada": "Onde baixas? Rúa ou número de parada",
-  "¿Dónde subes? Calle o número de parada": "Onde subes? Rúa ou número de parada",
-};
-
 // Server for alerts with the web closed (push/README.md). Empty url: alerts only work with the page open.
 const PUSH = { url: '', key: '' };
 
-// T`Llega a las ${x}` looks up "Llega a las {}"; anything missing stays in Spanish
-function T(strs, ...vals) {
-  const tr = LANG === 'gl' && GL[strs.join('{}')];
-  if (!tr) return strs.reduce((o, x, i) => o + (i ? vals[i - 1] : '') + x, '');
-  let i = 0; return tr.replace(/\{\}/g, () => vals[i++]);
-}
-// the static page: text nodes and the attributes people read
-function translateDom(root) {
-  if (LANG === 'es') return;
-  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  for (let n; (n = w.nextNode());) { const k = n.nodeValue.trim(); if (k && GL[k]) n.nodeValue = n.nodeValue.replace(k, GL[k]); }
-  for (const el of root.querySelectorAll('[aria-label],[title],[placeholder]'))
-    for (const a of ['aria-label', 'title', 'placeholder']) { const v = el.getAttribute(a); if (v && GL[v]) el.setAttribute(a, GL[v]); }
-}
-translateDom(document.body);
+
 
 // ---------- network ----------
 function hav(a, b) {
@@ -613,7 +432,7 @@ function slice(r, d0, d1) { // polyline between two distances along the route
 const routesOfLine = l => ROUTES.filter(r => r.line === l);
 const otherRoute = r => ROUTES.find(x => x.line === r.line && x.dir !== r.dir && x.main);
 const MAINS = ROUTES.filter(r => r.main);
-const stopName = id => (STOPS.get(id) || {}).name || T`Parada ${id}`;
+const stopName = id => (STOPS.get(id) || {}).name || `Parada ${id}`;
 const shortName = n => n.replace(/^(Rúa|Avda\.|Avenida|Praza|Estrada|Camiño)\s+(d[oae]s?\s+)?/i, '').replace(/\s*\(CUVI\)/, '');
 const textOn = hex => { const c = parseInt(hex.slice(1), 16), r = c >> 16, g = (c >> 8) & 255, b = c & 255; return (r * 299 + g * 587 + b * 114) / 1000 > 165 ? '#1f211d' : '#ffffff'; };
 const badge = (l, small) => `<span class="badge" style="background:${LINE_COLORS[l] || '#666'};color:${textOn(LINE_COLORS[l] || '#666')}${small ? ';height:18px;min-width:26px;font-size:10px;padding:0 6px' : ''}">${l}</span>`;
@@ -707,7 +526,7 @@ function renderThemeBtn() {
   b.innerHTML = t === 'dark' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>'
     : t === 'light' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>';
-  const label = t === 'dark' ? T`Tema: oscuro` : t === 'light' ? T`Tema: claro` : T`Tema: automático`;
+  const label = t === 'dark' ? 'Tema: escuro' : t === 'light' ? 'Tema: claro' : 'Tema: automático';
   b.setAttribute('aria-label', label); b.title = label;
 }
 sysDark.addEventListener('change', () => { if (!prefs.theme || prefs.theme === 'auto') applyTheme(); });
@@ -801,13 +620,13 @@ map.on('zoomend', () => { restyleBuses(); if (mode === 'explore') drawRoutes(); 
 function renderLinesPill() {
   const list = [...sel];
   document.getElementById('linesSw').innerHTML = list.slice(0, 4).map(l => `<i style="background:${LINE_COLORS[l]}"></i>`).join('');
-  document.getElementById('linesTxt').textContent = list.length === LINES.length ? T`Todas` : list.length === 0 ? T`Ninguna` : list.length <= 2 ? list.join(', ') : prefs.sel === null ? T`Mis líneas` : T`${list.length} líneas`;
+  document.getElementById('linesTxt').textContent = list.length === LINES.length ? 'Todas' : list.length === 0 ? 'Ningunha' : list.length <= 2 ? list.join(', ') : prefs.sel === null ? 'As miñas liñas' : `${list.length} liñas`;
 }
 function renderPicker() {
   const q = norm(document.getElementById('pkSearch').value.trim());
   const list = NET.lines.filter(l => LINES.includes(l.code) && (!q || norm(l.code + ' ' + l.name).includes(q)));
-  document.getElementById('pkGrid').innerHTML = list.map(l => `<button class="lt" data-l="${l.code}" aria-pressed="${sel.has(l.code)}">${badge(l.code)}<span class="nm">${niceRuta(l.name)}</span></button>`).join('') || `<div class="empty">${T`Ninguna línea coincide.`}</div>`;
-  document.getElementById('pkInfo').textContent = T`${sel.size} de ${LINES.length} líneas en el mapa`;
+  document.getElementById('pkGrid').innerHTML = list.map(l => `<button class="lt" data-l="${l.code}" aria-pressed="${sel.has(l.code)}">${badge(l.code)}<span class="nm">${niceRuta(l.name)}</span></button>`).join('') || `<div class="empty">Ningunha liña coincide.</div>`;
+  document.getElementById('pkInfo').textContent = `${sel.size} de ${LINES.length} liñas no mapa`;
 }
 function selChanged(auto) { prefs.sel = auto ? null : [...sel]; savePrefs(); renderLinesPill(); renderPicker(); if (mode === "explore") { clearBuses(); drawRoutes(); refreshStops(); clearTimeout(selT); selT = setTimeout(() => restartPolling(true), 600); } }
 let selT;
@@ -816,7 +635,7 @@ document.getElementById('pkGrid').addEventListener('click', e => { const b = e.t
 document.getElementById('pkSearch').addEventListener('input', renderPicker);
 document.getElementById('pkAll').onclick = () => { LINES.forEach(l => sel.add(l)); selChanged(); };
 document.getElementById('pkNone').onclick = () => { sel.clear(); selChanged(); };
-document.getElementById('pkMine').onclick = () => { if (!prefs.favs.length && !hasTrip()) { toast(T`Primero guarda alguna parada con la estrella`); return; } refreshAutoLines(true); };
+document.getElementById('pkMine').onclick = () => { if (!prefs.favs.length && !hasTrip()) { toast('Primeiro garda algunha parada coa estrela'); return; } refreshAutoLines(true); };
 // re-derive the lines on the map from the user's stops (only while they haven't picked lines by hand)
 function refreshAutoLines(force) {
   if (!force && prefs.sel !== null) return;
@@ -835,13 +654,13 @@ document.getElementById('locBtn').onclick = locate;
 document.getElementById('themeBtn').onclick = () => {
   const order = ['auto', 'light', 'dark'];
   prefs.theme = order[(order.indexOf(prefs.theme || 'auto') + 1) % 3]; savePrefs(); applyTheme();
-  toast(prefs.theme === 'auto' ? T`Tema automático, como tu sistema` : prefs.theme === 'light' ? T`Tema claro` : T`Tema oscuro`);
+  toast(prefs.theme === 'auto' ? 'Tema automático, coma o teu sistema' : prefs.theme === 'light' ? 'Tema claro' : 'Tema escuro');
 };
 renderThemeBtn();
 document.getElementById('tripPill').onclick = () => openEditor('origin');
 const hasTrip = () => !!(prefs.origin && prefs.dest);
 function renderTripText() {
-  document.getElementById('tripText').textContent = hasTrip() ? `${shortName(stopName(prefs.origin))} → ${shortName(stopName(prefs.dest))}` : prefs.origin ? T`${shortName(stopName(prefs.origin))} → elige destino` : T`Elegir mi trayecto`;
+  document.getElementById('tripText').textContent = hasTrip() ? `${shortName(stopName(prefs.origin))} → ${shortName(stopName(prefs.dest))}` : prefs.origin ? `${shortName(stopName(prefs.origin))} → escolle destino` : 'Escoller a miña viaxe';
   // the "your bus" block only makes sense with a trip
   document.getElementById('stack').hidden = !prefs.origin && !prefs.dest;
   document.getElementById('hero').hidden = document.getElementById('nextCard').hidden = !hasTrip();
@@ -961,10 +780,10 @@ const buses = new Map(); let nextId = 1, follow = null;
 function busIcon(b) {
   const r = b.route, fg = textOn(r.color);
   if (mode === 'stop') {
-    const L3 = (b.info.laps || [b.info.min]), t = L3.slice(0, 3).map(m => m <= 0 ? T`ya` : m + '′').join(' · ') + (L3.length > 3 ? ' …' : '');
+    const L3 = (b.info.laps || [b.info.min]), t = L3.slice(0, 3).map(m => m <= 0 ? 'xa' : m + '′').join(' · ') + (L3.length > 3 ? ' …' : '');
     const more = b.more ? `<i class="more">+${b.more}</i>` : '';
     const html = b.info.ghost
-      ? `<div class="busp ghost${selectedBus === b.id ? ' sel' : ''}" style="border-color:${r.color};color:var(--ink);background:var(--sheet)"><b style="background:${r.color};color:${fg}">${r.line}</b>${t} ${T`prog.`}${more}</div>`
+      ? `<div class="busp ghost${selectedBus === b.id ? ' sel' : ''}" style="border-color:${r.color};color:var(--ink);background:var(--sheet)"><b style="background:${r.color};color:${fg}">${r.line}</b>${t} prog.${more}</div>`
       : `<div class="busp${selectedBus === b.id ? ' sel' : ''}" style="background:${r.color};color:${fg}"><b>${r.line}</b>${t}${more}</div>`;
     // rough width of the pill, to tell which ones would cover each other
     b.pillW = 34 + 7.5 * (r.line.length + t.length + (b.info.ghost ? 6 : 0)) + (b.more ? 30 : 0);
@@ -1027,7 +846,7 @@ function openCluster(b) {
   const pts = [b, ...b.members].map(x => x.marker.getLatLng()), bounds = L.latLngBounds(pts);
   const z = Math.min(map.getBoundsZoom(bounds.pad(0.6)), 18);
   if (z > map.getZoom()) map.flyToBounds(bounds.pad(0.6), { maxZoom: 18, duration: 0.5 });
-  else { selectArrival(b.id); toast(T`${b.members.length + 1} buses en el mismo punto: los tienes en la lista`); }
+  else { selectArrival(b.id); toast(`${b.members.length + 1} buses no mesmo punto: tes todos na lista`); }
 }
 function updateBuses(found, pollMs) {
   const seen = new Set();
@@ -1128,31 +947,31 @@ function renderStopPanel(loading) {
   const list = results.get(focusStop);
   const now = Date.now();
   let rows;
-  if (loading || !results.has(focusStop)) rows = `<div class="empty">${T`Consultando la parada…`}</div>`;
-  else if (!list) rows = `<div class="empty">${T`Esta parada no responde ahora. Lo reintento en unos segundos.`}</div>`;
-  else if (!list.length) rows = `<div class="empty">${T`Ningún bus previsto ahora mismo en esta parada.`}</div>`;
+  if (loading || !results.has(focusStop)) rows = `<div class="empty">Consultando a parada…</div>`;
+  else if (!list) rows = `<div class="empty">Esta parada non responde agora. Volvo tentalo nuns segundos.</div>`;
+  else if (!list.length) rows = `<div class="empty">Ningún bus previsto agora mesmo nesta parada.</div>`;
   else {
     const items = estimateStopCache.slice().sort((a, b) => a.min - b.min);
     rows = items.map(f => {
       const b = [...buses.values()].find(x => x.info === (f.lapOf || f));
       const at = hhmm(new Date(now + f.min * 60000));
-      const detail = f.noGps ? T`Programado a las ${at}` + (f.head ? T`, sale de ${shortName(f.head)}` : '') + (f.ghost ? '' : T`, aún sin GPS`)
-        : T`Llega a las ${at}, a ${fmtDist(f.metros)}` + (f.lapOf ? T`, en la vuelta siguiente del bus de ${f.lapOf.min} min` : '');
+      const detail = f.noGps ? `Programado ás ${at}` + (f.head ? `, sae de ${shortName(f.head)}` : '') + (f.ghost ? '' : ', aínda sen GPS')
+        : `Chega ás ${at}, a ${fmtDist(f.metros)}` + (f.lapOf ? `, na volta seguinte do bus de ${f.lapOf.min} min` : '');
       return `<button class="arr${b && selectedBus === b.id ? ' sel' : ''}" ${b ? `data-bus="${b.id}"` : ''}>${badge(f.line)}
         <span class="d"><b>${f.ruta}</b><span>${detail}</span></span>${whenHtml([f.min], !f.noGps)}</button>`;
     }).join('');
   }
   const fav = prefs.favs.includes(s.id);
-  el.innerHTML = `<div class="sp-head"><div class="nm"><b>${s.name}</b><div class="meta"><span>${T`Parada ${s.id}`}</span>${[...s.lines].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })).map(l => badge(l, true)).join('')}</div></div>
-      <button class="star" id="spShare" aria-label="${T`Compartir esta parada`}" title="${T`Compartir esta parada`}">${SHARE}</button><button class="star" id="spStar" aria-pressed="${fav}" aria-label="${fav ? T`Quitar de mis paradas` : T`Guardar en mis paradas`}" title="${fav ? T`Quitar de mis paradas` : T`Guardar en mis paradas`}">${STAR}</button><button class="x" id="spClose" aria-label="${T`Cerrar parada`}">✕</button></div>
+  el.innerHTML = `<div class="sp-head"><div class="nm"><b>${s.name}</b><div class="meta"><span>Parada ${s.id}</span>${[...s.lines].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })).map(l => badge(l, true)).join('')}</div></div>
+      <button class="star" id="spShare" aria-label="Compartir esta parada" title="Compartir esta parada">${SHARE}</button><button class="star" id="spStar" aria-pressed="${fav}" aria-label="${fav ? 'Quitar das miñas paradas' : 'Gardar nas miñas paradas'}" title="${fav ? 'Quitar das miñas paradas' : 'Gardar nas miñas paradas'}">${STAR}</button><button class="x" id="spClose" aria-label="Pechar a parada">✕</button></div>
     <div class="list">${rows}</div>
-    <div class="stopacts"><button class="btn" id="spOrig">${T`Subo aquí`}</button><button class="btn" id="spDest">${T`Bajo aquí`}</button><button class="btn" id="spFit">${T`Ver los buses`}</button></div>`;
+    <div class="stopacts"><button class="btn" id="spOrig">Subo aquí</button><button class="btn" id="spDest">Baixo aquí</button><button class="btn" id="spFit">Ver os buses</button></div>`;
   el.querySelector('#spClose').onclick = exitStop;
   el.querySelector('#spFit').onclick = fitStop;
   el.querySelector('#spStar').onclick = () => { toggleFav(s.id); renderStopPanel(); };
   el.querySelector('#spShare').onclick = () => shareStop(s);
-  el.querySelector('#spOrig').onclick = () => { setTripStop('origin', focusStop); toast(T`Guardada como la parada donde subes`); };
-  el.querySelector('#spDest').onclick = () => { setTripStop('dest', focusStop); toast(T`Guardada como tu destino`); };
+  el.querySelector('#spOrig').onclick = () => { setTripStop('origin', focusStop); toast('Gardada como a parada onde subes'); };
+  el.querySelector('#spDest').onclick = () => { setTripStop('dest', focusStop); toast('Gardada como o teu destino'); };
   el.querySelectorAll('.arr[data-bus]').forEach(x => x.onclick = () => selectArrival(+x.dataset.bus));
 }
 let estimateStopCache = [];
@@ -1223,7 +1042,7 @@ function renderFresh() {
   const el = document.getElementById('fresh'), txt = document.getElementById('freshTxt');
   const age = lastOk ? Math.round((Date.now() - lastOk) / 1000) : null;
   el.classList.toggle('err', lastErr && (age === null || age > 90)); el.classList.toggle('stale', age !== null && age > 90 && !lastErr);
-  txt.textContent = age === null ? (lastErr ? T`Sin conexión` : T`Conectando…`) : age < 10 ? T`En directo` : age < 90 ? T`Hace ${age} s` : T`Hace ${Math.round(age / 60)} min`;
+  txt.textContent = age === null ? (lastErr ? 'Sen conexión' : 'Conectando…') : age < 10 ? 'En directo' : age < 90 ? `Hai ${age} s` : `Hai ${Math.round(age / 60)} min`;
 }
 setInterval(renderFresh, 5000);
 addEventListener('keydown', e => {
@@ -1241,12 +1060,12 @@ const SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const LOC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg>';
 // countdown as on a stop display: the next bus big, the one after small
 function whenHtml(mins, live) {
-  const [a, b] = mins, first = a <= 0 ? `<span class="now">${T`Llegando`}</span>` : `${live ? LIVE : ''}<span class="t">${a}</span><span class="u">min</span>`;
-  return `<span class="when${live ? '' : ' sched'}"><span class="w1">${first}</span>${b !== undefined ? `<span class="w2">${T`luego ${b} min`}</span>` : ''}</span>`;
+  const [a, b] = mins, first = a <= 0 ? `<span class="now">Chegando</span>` : `${live ? LIVE : ''}<span class="t">${a}</span><span class="u">min</span>`;
+  return `<span class="when${live ? '' : ' sched'}"><span class="w1">${first}</span>${b !== undefined ? `<span class="w2">logo ${b} min</span>` : ''}</span>`;
 }
 const sortLines = ls => [...ls].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
 const fmtDist = m => m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`;
-const aDist = m => m < 15 ? T`aquí mismo` : T`a ${fmtDist(m)}`;
+const aDist = m => m < 15 ? 'aquí mesmo' : `a ${fmtDist(m)}`;
 // next departures at a stop, one row per line and destination
 function departures(id) {
   const list = results.get(id); if (!list) return list;
@@ -1257,18 +1076,18 @@ function departures(id) {
 function toggleFav(id) {
   const i = prefs.favs.indexOf(id), adding = i < 0;
   if (adding) { prefs.favs.push(id); prefs.welcomed = true; } else prefs.favs.splice(i, 1);
-  savePrefs(); toast(adding ? T`${shortName(stopName(id))} guardada en Mis paradas` : T`${shortName(stopName(id))} quitada de Mis paradas`);
+  savePrefs(); toast(adding ? `${shortName(stopName(id))} gardada nas miñas paradas` : `${shortName(stopName(id))} quitada das miñas paradas`);
   if (adding && !results.has(id)) fetchStop(id).then(l => { results.set(id, l); renderHome(); }, () => {});
   refreshAutoLines(); renderHome();
 }
 function renderHome() {
   const box = document.getElementById('favs'), has = prefs.favs.length > 0, trip = !!(prefs.origin || prefs.dest);
-  document.getElementById('sheetTitle').textContent = has || trip || prefs.welcomed ? T`Mis paradas` : T`Tus buses, de un vistazo`;
+  document.getElementById('sheetTitle').textContent = has || trip || prefs.welcomed ? 'As miñas paradas' : 'Os teus buses, dunha ollada';
   if (!has && !trip && !prefs.welcomed) {
-    box.innerHTML = `<div class="welcome"><p>${T`Guarda las paradas que usas y aquí verás cuándo llega cada bus, sin tener que buscarlas.`}</p>
-      <button class="btn sig" id="wNear">${LOC}${T`Paradas cerca de mí`}</button>
-      <button class="btn" id="wFind">${T`Buscar una parada`}</button>
-      <button class="btn link" id="wMap">${T`Ahora no, solo ver el mapa`}</button></div>`;
+    box.innerHTML = `<div class="welcome"><p>Garda as paradas que usas e aquí verás cando chega cada bus, sen ter que buscalas.</p>
+      <button class="btn sig" id="wNear">${LOC}Paradas preto de min</button>
+      <button class="btn" id="wFind">Buscar unha parada</button>
+      <button class="btn link" id="wMap">Agora non, só ver o mapa</button></div>`;
     box.querySelector('#wNear').onclick = () => { openFinder(); locate(); };
     box.querySelector('#wFind').onclick = () => openFinder();
     box.querySelector('#wMap').onclick = () => { prefs.welcomed = true; savePrefs(); setSheet(true); renderHome(); };
@@ -1278,13 +1097,13 @@ function renderHome() {
   if (myPos) favs = favs.map(s => ({ s, m: hav([s.lat, s.lon], myPos) })).sort((a, b) => a.m - b.m).map(x => x.s);
   box.innerHTML = favs.map(s => {
     const deps = departures(s.id), dist = myPos ? `, ${aDist(hav([s.lat, s.lon], myPos))}` : '';
-    const rows = deps === undefined ? `<div class="none">${T`Consultando…`}</div>` : deps === null ? `<div class="none">${T`Esta parada no responde ahora.`}</div>`
-      : !deps.length ? `<div class="none">${T`Ningún bus en la próxima hora y media.`}</div>`
-      : deps.slice(0, 4).map(d => `<div class="dep">${badge(d.line)}<span class="to"><b>${d.ruta}</b><span>${d.mins[0] <= 0 ? T`En la parada` : d.live ? T`Llega a las ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}` : T`Programado, ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}`}</span></span>${whenHtml(d.mins, d.live)}</div>`).join('')
-        + (deps.length > 4 ? `<button class="btn link" data-open="${s.id}">${T`${deps.length - 4} más en esta parada`}</button>` : '');
-    return `<section class="fav"><div class="fav-h"><button class="fav-open" data-open="${s.id}"><span class="nm"><b>${s.name}</b><span>${T`Parada ${s.id}`}${dist}</span></span>${CHEVRON}</button>
-      <button class="star" data-star="${s.id}" aria-pressed="true" aria-label="${T`Quitar ${s.name} de mis paradas`}">${STAR}</button></div>${rows}</section>`;
-  }).join('') + `<button class="add" id="favAdd">+ ${has ? T`Añadir otra parada` : T`Añadir una parada`}</button>`;
+    const rows = deps === undefined ? `<div class="none">Consultando…</div>` : deps === null ? `<div class="none">Esta parada non responde agora.</div>`
+      : !deps.length ? `<div class="none">Ningún bus na próxima hora e media.</div>`
+      : deps.slice(0, 4).map(d => `<div class="dep">${badge(d.line)}<span class="to"><b>${d.ruta}</b><span>${d.mins[0] <= 0 ? 'Na parada' : d.live ? `Chega ás ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}` : `Programado, ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}`}</span></span>${whenHtml(d.mins, d.live)}</div>`).join('')
+        + (deps.length > 4 ? `<button class="btn link" data-open="${s.id}">${deps.length - 4} máis nesta parada</button>` : '');
+    return `<section class="fav"><div class="fav-h"><button class="fav-open" data-open="${s.id}"><span class="nm"><b>${s.name}</b><span>Parada ${s.id}${dist}</span></span>${CHEVRON}</button>
+      <button class="star" data-star="${s.id}" aria-pressed="true" aria-label="Quitar ${s.name} das miñas paradas">${STAR}</button></div>${rows}</section>`;
+  }).join('') + `<button class="add" id="favAdd">+ ${has ? 'Engadir outra parada' : 'Engadir unha parada'}</button>`;
   box.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openStop(+b.dataset.open));
   box.querySelectorAll('[data-star]').forEach(b => b.onclick = () => toggleFav(+b.dataset.star));
   box.querySelector('#favAdd').onclick = () => openFinder();
@@ -1302,29 +1121,23 @@ document.getElementById('sheetGrab').onclick = () => setSheet(!document.getEleme
 const stopUrl = id => location.origin + location.pathname + '?parada=' + id;
 async function shareStop(s) {
   const url = stopUrl(s.id);
-  try { if (navigator.share) { await navigator.share({ title: s.name, text: T`Próximos buses en ${s.name}`, url }); return; } } catch (e) { if (e.name === 'AbortError') return; }
-  try { await navigator.clipboard.writeText(url); toast(T`Enlace copiado`); } catch (e) { prompt(T`Copia el enlace`, url); }
+  try { if (navigator.share) { await navigator.share({ title: s.name, text: `Próximos buses en ${s.name}`, url }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(url); toast('Ligazón copiada'); } catch (e) { prompt('Copia a ligazón', url); }
 }
 // the address bar always points at what's on screen, so it can be bookmarked or shared
 function syncUrl() { history.replaceState(null, '', mode === 'stop' ? '?parada=' + focusStop : location.pathname); }
 
-// ---------- about & language ----------
-document.getElementById('infoBtn').onclick = () => {
-  document.getElementById('about').hidden = false;
-  document.querySelectorAll('#about [data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)));
-};
+// ---------- about ----------
+document.getElementById('infoBtn').onclick = () => { document.getElementById('about').hidden = false; };
 document.getElementById('abClose').onclick = () => { document.getElementById('about').hidden = true; };
-document.getElementById('about').addEventListener('click', e => {
-  if (e.target.id === 'about') { e.target.hidden = true; return; }
-  const b = e.target.closest('[data-lang]'); if (b && b.dataset.lang !== LANG) { prefs.lang = b.dataset.lang; savePrefs(); location.reload(); }
-});
+document.getElementById('about').addEventListener('click', e => { if (e.target.id === 'about') e.target.hidden = true; });
 
 // ---------- search ----------
 function stopRow(s, star) {
   const ls = sortLines(s.lines), shown = ls.slice(0, 5).map(l => badge(l, true)).join('') + (ls.length > 5 ? `<span class="badge s" style="background:var(--raise);color:var(--muted)">+${ls.length - 5}</span>` : '');
   const fav = prefs.favs.includes(s.id);
-  return `<div class="res"><button class="open" data-id="${s.id}"><b>${s.name}</b><span class="meta"><span>${T`Parada ${s.id}`}${myPos ? ', ' + aDist(hav([s.lat, s.lon], myPos)) : ''}</span>${shown}</span></button>`
-    + (star ? `<button class="star" data-star="${s.id}" aria-pressed="${fav}" aria-label="${fav ? T`Quitar de mis paradas` : T`Guardar en mis paradas`}">${STAR}</button>` : '') + '</div>';
+  return `<div class="res"><button class="open" data-id="${s.id}"><b>${s.name}</b><span class="meta"><span>Parada ${s.id}${myPos ? ', ' + aDist(hav([s.lat, s.lon], myPos)) : ''}</span>${shown}</span></button>`
+    + (star ? `<button class="star" data-star="${s.id}" aria-pressed="${fav}" aria-label="${fav ? 'Quitar das miñas paradas' : 'Gardar nas miñas paradas'}">${STAR}</button>` : '') + '</div>';
 }
 // every word must appear: "urzaiz 4", "praza españa"
 function findStops(q) {
@@ -1337,10 +1150,10 @@ function renderFinder() {
   const q = document.getElementById('fdSearch').value.trim();
   let list, hint = '';
   if (q) list = findStops(q).slice(0, 30);
-  else if (myPos) { list = [...STOPS.values()].sort((a, b) => hav([a.lat, a.lon], myPos) - hav([b.lat, b.lon], myPos)).slice(0, 8); hint = T`Cerca de ti`; }
-  else { list = prefs.favs.map(id => STOPS.get(id)); hint = list.length ? T`Tus paradas` : T`Escribe la calle o el número que aparece en el poste de la parada.`; }
+  else if (myPos) { list = [...STOPS.values()].sort((a, b) => hav([a.lat, a.lon], myPos) - hav([b.lat, b.lon], myPos)).slice(0, 8); hint = 'Preto de ti'; }
+  else { list = prefs.favs.map(id => STOPS.get(id)); hint = list.length ? 'As túas paradas' : 'Escribe a rúa ou o número que aparece no poste da parada.'; }
   document.getElementById('fdResults').innerHTML = (hint ? `<div class="hint">${hint}</div>` : '') + list.map(s => stopRow(s, true)).join('')
-    + (q && !list.length ? `<div class="empty">${T`Ninguna parada se llama así. Prueba con otra palabra o con el número del poste.`}</div>` : '');
+    + (q && !list.length ? `<div class="empty">Ningunha parada se chama así. Proba con outra palabra ou co número do poste.</div>` : '');
 }
 function openFinder() {
   const el = document.getElementById('finder'), q = document.getElementById('fdSearch');
@@ -1362,7 +1175,7 @@ function afterTripChange() { refreshStops(); renderTripText(); renderHome(); ref
 
 // ---------- trip logic ----------
 const tripRoute = line => routesOfLine(line).filter(r => r.stopById.has(prefs.origin) && r.stopById.has(prefs.dest) && r.stopById.get(prefs.dest).d > r.stopById.get(prefs.origin).d).sort((a, b) => b.main - a.main || b.rank - a.rank)[0];
-const HHMM = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }), hhmm = d => HHMM.format(d);
+const HHMM = new Intl.DateTimeFormat('gl-ES', { hour: '2-digit', minute: '2-digit' }), hhmm = d => HHMM.format(d);
 // ---- official timetable (GTFS): patterns of stops with minute offsets, trips with start minute and service dates ----
 const SVC = SCHED.dates.map(d => new Set(d));
 const STOPIDX = new Map(), TRIPS_BY_PAT = SCHED.patterns.map(() => []);
@@ -1459,19 +1272,19 @@ function trips() {
 }
 let heroBus = null, heroTrip = null;   // the bus shown big for the trip, and its departure
 function stateBadge(t) {
-  if (t.kind === 'sched') return `<span class="state">${T`Según horario`}</span>`;
+  if (t.kind === 'sched') return `<span class="state">Segundo o horario</span>`;
   const d = t.delay; if (!d) return '';
-  if (d.diff >= 2) return `<span class="state late">${T`${d.diff} min tarde`}</span>`;
-  if (d.diff <= -2) return `<span class="state early">${T`${-d.diff} min adelantado`}</span>`;
-  return `<span class="state ok">${T`A su hora`}</span>`;
+  if (d.diff >= 2) return `<span class="state late">${d.diff} min tarde</span>`;
+  if (d.diff <= -2) return `<span class="state early">${-d.diff} min adiantado</span>`;
+  return `<span class="state ok">Á súa hora</span>`;
 }
 function renderHero() {
   const el = document.getElementById('hero');
   if (!hasTrip()) { heroBus = null; heroTrip = null; return; }
   const list = trips();
-  if (list === null) { el.innerHTML = results.has(prefs.origin) ? `<div class="empty">${T`Tu parada no responde ahora. Lo reintento en unos segundos.`}</div>` : `<div class="empty">${T`Consultando tu parada…`}</div>`; return; }
+  if (list === null) { el.innerHTML = results.has(prefs.origin) ? `<div class="empty">A túa parada non responde agora. Volvo tentalo nuns segundos.</div>` : `<div class="empty">Consultando a túa parada…</div>`; return; }
   const t = list.find(x => x.reaches); heroTrip = t || null;
-  if (!t) { el.innerHTML = `<div class="empty">${T`Ningún bus va hacia ${shortName(stopName(prefs.dest))} en la próxima hora y media.`}</div>`; heroBus = null; renderNext(list); return; }
+  if (!t) { el.innerHTML = `<div class="empty">Ningún bus vai cara a ${shortName(stopName(prefs.dest))} na próxima hora e media.</div>`; heroBus = null; renderNext(list); return; }
   const now = new Date();
   const passAt = hhmm(new Date(now.getTime() + t.min * 60000)), arrAt = t.destMin !== null ? hhmm(new Date(now.getTime() + t.destMin * 60000)) : '—';
   let progress = '';
@@ -1482,25 +1295,25 @@ function renderHero() {
     const startStop = t.r.stops.filter(s => s.d <= t.r.stopById.get(prefs.origin).d - windowM).pop();
     const stopsLeft = t.r.stops.filter(s => s.d > t.along && s.d <= t.r.stopById.get(prefs.origin).d).length;
     progress = `<div class="bar"><div style="width:${pct}%;background:${t.r.color}"></div></div>
-      <div class="marks"><span>${startStop ? shortName(startStop.name) : ''}</span><span>${passed ? T`Por ${shortName(passed.name)}` : T`Saliendo de cabecera`}</span><span>${stopsLeft <= 0 ? T`Ya llega` : stopsLeft === 1 ? T`Falta 1 parada` : T`Faltan ${stopsLeft} paradas`}</span></div>`;
+      <div class="marks"><span>${startStop ? shortName(startStop.name) : ''}</span><span>${passed ? `Por ${shortName(passed.name)}` : 'Saíndo da cabeceira'}</span><span>${stopsLeft <= 0 ? 'Xa chega' : stopsLeft === 1 ? 'Falta 1 parada' : `Faltan ${stopsLeft} paradas`}</span></div>`;
     heroBus = [...buses.values()].filter(b => b.route === t.r).sort((a, b) => Math.abs(a.fix - t.along) - Math.abs(b.fix - t.along))[0] || null;
     if (heroBus && Math.abs(heroBus.fix - t.along) > 1500) heroBus = null;
   } else {
-    progress = `<div class="sub">${T`Aún no ha salido: es la hora del horario de Vitrasa.`}</div>`;
+    progress = `<div class="sub">Aínda non saíu: é a hora do horario de Vitrasa.</div>`;
   }
   const following = follow && heroBus && follow === heroBus.id;
   el.innerHTML = `
     <div class="row1"><span class="who">${badge(t.line)}<span>${t.ruta}</span></span>${stateBadge(t)}</div>
-    ${t.min <= 0 ? `<div class="big now">${T`Llegando`}</div>` : `<div class="big">${t.min}<small>min</small></div>`}
-    <div class="sub n">${T`Pasa a las <b>${passAt}</b> y llegas a ${shortName(stopName(prefs.dest))} a las <b>${arrAt}</b>`}${t.sure ? '' : T` (aprox.)`}</div>
+    ${t.min <= 0 ? `<div class="big now">Chegando</div>` : `<div class="big">${t.min}<small>min</small></div>`}
+    <div class="sub n">Pasa ás <b>${passAt}</b> e chegas a ${shortName(stopName(prefs.dest))} ás <b>${arrAt}</b>${t.sure ? '' : ' (aprox.)'}</div>
     ${progress}
     <div class="actions">
-      <button class="btn sig" id="alertBtn" aria-pressed="${alertOn}">${alertOn ? T`Aviso activado` : T`Avisarme`}</button>
-      <button class="btn" id="followBtn" aria-pressed="${!!following}" ${t.kind === 'sched' ? 'disabled' : ''}>${following ? T`Siguiéndolo` : T`Ver en el mapa`}</button>
+      <button class="btn sig" id="alertBtn" aria-pressed="${alertOn}">${alertOn ? 'Aviso activado' : 'Avisarme'}</button>
+      <button class="btn" id="followBtn" aria-pressed="${!!following}" ${t.kind === 'sched' ? 'disabled' : ''}>${following ? 'Seguíndoo' : 'Ver no mapa'}</button>
     </div>`;
   document.getElementById('alertBtn').onclick = toggleAlert;
   document.getElementById('followBtn').onclick = () => {
-    if (!heroBus) { toast(T`Este bus aún no está en el mapa`); return; }
+    if (!heroBus) { toast('Este bus aínda non está no mapa'); return; }
     if (following) { follow = null; } else { follow = heroBus.id; map.setView(heroBus.marker.getLatLng(), Math.max(map.getZoom(), 15)); showBusCard(heroBus); }
     renderHero(); restyleBuses();
   };
@@ -1509,16 +1322,16 @@ function renderHero() {
   renderNext(list, t);
 }
 function nextLabel(t) {
-  if (!t.reaches) return T`No va a tu destino`;
-  const arr = t.destMin !== null ? T`, llegas a las ${hhmm(new Date(Date.now() + t.destMin * 60000))}` : '';
-  if (t.kind === 'sched') return T`Según horario` + arr;
+  if (!t.reaches) return 'Non vai ao teu destino';
+  const arr = t.destMin !== null ? `, chegas ás ${hhmm(new Date(Date.now() + t.destMin * 60000))}` : '';
+  if (t.kind === 'sched') return 'Segundo o horario' + arr;
   const d = t.delay;
-  return (d ? (d.diff >= 2 ? T`${d.diff} min tarde` : d.diff <= -2 ? T`${-d.diff} min adelantado` : T`A su hora`) : T`En camino`) + arr;
+  return (d ? (d.diff >= 2 ? `${d.diff} min tarde` : d.diff <= -2 ? `${-d.diff} min adiantado` : 'Á súa hora') : 'En camiño') + arr;
 }
 function renderNext(list, hero) {
   const el = document.getElementById('nextList');
   const rest = (list || []).filter(t => t !== hero && t.reaches).slice(0, 4);
-  if (!rest.length) { el.innerHTML = `<div class="empty">${T`Ninguno más en la próxima hora y media.`}</div>`; return; }
+  if (!rest.length) { el.innerHTML = `<div class="empty">Ningún máis na próxima hora e media.</div>`; return; }
   el.innerHTML = rest.map(t => `<div class="dep">${badge(t.line)}<span class="to"><b>${t.ruta}</b><span>${nextLabel(t)}</span></span>${whenHtml([t.min], t.kind === 'live')}</div>`).join('');
 }
 // ---------- bus card ----------
@@ -1533,13 +1346,13 @@ function renderBusCard() {
     const l = results.get(s.id);
     const e = l && l.filter(x => x.linea === r.line).map(x => ({ x, err: Math.abs(x.metros - (s.d - b.fix)) })).sort((p, q) => p.err - q.err)[0];
     const min = e && e.err < 900 + 0.3 * (s.d - b.fix) ? e.x.minutos : Math.max(0, Math.round((s.d - b.shown) / 1000 * 2.4));
-    const mine = s.id === prefs.origin ? T`tu parada` : s.id === prefs.dest ? T`tu destino` : '';
-    return `<div class="item"><span class="d">${s.name}${mine ? `<span>${mine}</span>` : ''}</span><span class="m n">${min <= 0 ? T`Ya` : min + ' min'}</span></div>`;
+    const mine = s.id === prefs.origin ? 'a túa parada' : s.id === prefs.dest ? 'o teu destino' : '';
+    return `<div class="item"><span class="d">${s.name}${mine ? `<span>${mine}</span>` : ''}</span><span class="m n">${min <= 0 ? 'Xa' : min + ' min'}</span></div>`;
   }).join('');
   const following = follow === b.id;
-  el.innerHTML = `<div class="bc-h">${badge(r.line)}<b>${b.info.ruta}</b><button class="x" id="busClose" aria-label="${T`Cerrar`}">✕</button></div>
-    <div class="sub">${T`Sus próximas paradas`}</div>${rows || `<div class="empty">${T`Llegando al final de la línea.`}</div>`}
-    <div class="actions"><button class="btn${following ? '' : ' pri'}" id="busFollow">${following ? T`Dejar de seguir` : T`Seguir este bus`}</button></div>`;
+  el.innerHTML = `<div class="bc-h">${badge(r.line)}<b>${b.info.ruta}</b><button class="x" id="busClose" aria-label="Pechar">✕</button></div>
+    <div class="sub">As súas próximas paradas</div>${rows || `<div class="empty">Chegando ao final da liña.</div>`}
+    <div class="actions"><button class="btn${following ? '' : ' pri'}" id="busFollow">${following ? 'Deixar de seguir' : 'Seguir este bus'}</button></div>`;
   el.hidden = false;
   el.querySelector('#busClose').onclick = () => { busCardId = null; if (follow === b.id) { follow = null; renderHero(); restyleBuses(); } renderBusCard(); };
   el.querySelector('#busFollow').onclick = () => { follow = following ? null : b.id; if (follow) map.setView(b.marker.getLatLng(), Math.max(map.getZoom(), 15)); renderHero(); restyleBuses(); renderBusCard(); };
@@ -1551,11 +1364,11 @@ let editing = 'origin';
 function openEditor(which) {
   editing = which || 'origin';
   const el = document.getElementById('editor'); el.hidden = false;
-  document.getElementById('edOrigin').textContent = prefs.origin ? stopName(prefs.origin) : T`Sin elegir`;
-  document.getElementById('edDest').textContent = prefs.dest ? stopName(prefs.dest) : T`Sin elegir`;
+  document.getElementById('edOrigin').textContent = prefs.origin ? stopName(prefs.origin) : 'Sen escoller';
+  document.getElementById('edDest').textContent = prefs.dest ? stopName(prefs.dest) : 'Sen escoller';
   document.getElementById('edOriginBtn').setAttribute('aria-pressed', String(editing === 'origin'));
   document.getElementById('edDestBtn').setAttribute('aria-pressed', String(editing === 'dest'));
-  const q = document.getElementById('edSearch'); q.value = ''; q.placeholder = editing === 'origin' ? T`¿Dónde subes? Calle o número de parada` : T`¿Dónde bajas? Calle o número de parada`;
+  const q = document.getElementById('edSearch'); q.value = ''; q.placeholder = editing === 'origin' ? 'Onde subes? Rúa ou número de parada' : 'Onde baixas? Rúa ou número de parada';
   renderSearch(); setTimeout(() => q.focus(), 50);
 }
 function closeEditor() { document.getElementById('editor').hidden = true; }
@@ -1563,10 +1376,10 @@ function renderSearch() {
   const q = document.getElementById('edSearch').value.trim();
   let list, hint = '';
   if (q) list = findStops(q).slice(0, 30);
-  else if (myPos) { list = [...STOPS.values()].sort((a, b) => hav([a.lat, a.lon], myPos) - hav([b.lat, b.lon], myPos)).slice(0, 8); hint = T`Cerca de ti`; }
-  else { list = prefs.favs.map(id => STOPS.get(id)); hint = list.length ? T`Tus paradas` : T`Escribe la calle o el número que aparece en el poste de la parada.`; }
+  else if (myPos) { list = [...STOPS.values()].sort((a, b) => hav([a.lat, a.lon], myPos) - hav([b.lat, b.lon], myPos)).slice(0, 8); hint = 'Preto de ti'; }
+  else { list = prefs.favs.map(id => STOPS.get(id)); hint = list.length ? 'As túas paradas' : 'Escribe a rúa ou o número que aparece no poste da parada.'; }
   document.getElementById('edResults').innerHTML = (hint ? `<div class="hint">${hint}</div>` : '') + list.map(s => stopRow(s, false)).join('')
-    + (q && !list.length ? `<div class="empty">${T`Ninguna parada se llama así. Prueba con otra palabra o con el número del poste.`}</div>` : '');
+    + (q && !list.length ? `<div class="empty">Ningunha parada se chama así. Proba con outra palabra ou co número do poste.</div>` : '');
 }
 function setTripStop(which, id) {
   if (which === 'origin') { if (id === prefs.dest) prefs.dest = prefs.origin; prefs.origin = id; }
@@ -1579,8 +1392,8 @@ function setTripStop(which, id) {
 // ---------- my location ----------
 let myPos = null, myMarker = null;
 function locate() {
-  if (!navigator.geolocation) { toast(T`Tu navegador no puede darnos tu ubicación`); return; }
-  toast(T`Buscando dónde estás…`);
+  if (!navigator.geolocation) { toast('O teu navegador non pode darnos a túa localización'); return; }
+  toast('Buscando onde estás…');
   navigator.geolocation.getCurrentPosition(p => {
     myPos = [p.coords.latitude, p.coords.longitude];
     if (!myMarker) myMarker = L.circleMarker(myPos, { radius: 8, color: '#fff', weight: 3, fillColor: '#1b67a6', fillOpacity: 1 }).addTo(map);
@@ -1588,11 +1401,11 @@ function locate() {
     const near = [...STOPS.values()].sort((a, b) => hav([a.lat, a.lon], myPos) - hav([b.lat, b.lon], myPos))[0];
     const dist = hav([near.lat, near.lon], myPos);
     map.setView(myPos, 16);
-    toast(dist < 3000 ? T`La parada más cercana es ${shortName(near.name)}, ${aDist(dist)}` : T`Estás fuera de la red de Vitrasa`);
+    toast(dist < 3000 ? `A parada máis próxima é ${shortName(near.name)}, ${aDist(dist)}` : 'Estás fóra da rede de Vitrasa');
     if (!document.getElementById('editor').hidden) renderSearch();
     if (!document.getElementById('finder').hidden) renderFinder();
     renderHome();
-  }, e => toast(e.code === 1 ? T`Sin permiso de ubicación: actívalo en los ajustes del navegador` : T`No se pudo obtener tu ubicación`), { enableHighAccuracy: true, timeout: 10000 });
+  }, e => toast(e.code === 1 ? 'Sen permiso de localización: actívao nos axustes do navegador' : 'Non se puido obter a túa localización'), { enableHighAccuracy: true, timeout: 10000 });
 }
 
 
@@ -1621,7 +1434,7 @@ async function pushOn(t) {
   const reg = await navigator.serviceWorker.ready;
   pushSub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PUSH.key) });
   const res = await fetch(PUSH.url + '/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sub: pushSub.toJSON(), stop: prefs.origin, line: t.line, lead: 5, minutes: Math.max(30, t.min + 30), lang: LANG, stopName: shortName(stopName(prefs.origin)) }) });
+    body: JSON.stringify({ sub: pushSub.toJSON(), stop: prefs.origin, line: t.line, lead: 5, minutes: Math.max(30, t.min + 30), stopName: shortName(stopName(prefs.origin)) }) });
   return res.ok;
 }
 function pushOff() {
@@ -1632,15 +1445,15 @@ function pushOff() {
 async function toggleAlert() {
   alertOn = !alertOn; alerted = null;
   renderHero();
-  if (!alertOn) { pushOff(); toast(T`Aviso quitado`); return; }
+  if (!alertOn) { pushOff(); toast('Aviso quitado'); return; }
   try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
   let remote = false;
   try { remote = !!heroTrip && await pushOn(heroTrip); } catch (e) {}
-  if (remote) toast(T`Te aviso cuando falten 5 minutos, aunque cierres la web`);
-  else if (PUSH.url && iosBrowser()) toast(T`Para recibir el aviso con la web cerrada, añádela a la pantalla de inicio. Ahora, déjala abierta`);
+  if (remote) toast('Avísote cando falten 5 minutos, aínda que peches a web');
+  else if (PUSH.url && iosBrowser()) toast('Para recibir o aviso coa web pechada, engádea á pantalla de inicio. Agora, déixaa aberta');
   else {
     try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
-    toast(T`Te aviso cuando falten 5 minutos. Deja la web abierta`);
+    toast('Avísote cando falten 5 minutos. Deixa a web aberta');
   }
 }
 function checkAlert(t) {
@@ -1648,8 +1461,8 @@ function checkAlert(t) {
   // one alert per bus: identify it by line and expected arrival (5-minute slot), not by its position
   const key = t.line + ":" + Math.round((Date.now() + t.min * 60000) / 300000);
   if (alerted === key) return; alerted = key;
-  const msg = T`Tu ${t.line} llega a ${shortName(stopName(prefs.origin))} en ${t.min} min`;
-  toast(msg); beep(); notify(T`Sal ya`, msg);
+  const msg = `O teu ${t.line} chega a ${shortName(stopName(prefs.origin))} en ${t.min} min`;
+  toast(msg); beep(); notify('Sae xa', msg);
   pushOff();   // already told: the server doesn't need to
 }
 
@@ -1672,10 +1485,10 @@ document.getElementById('edSwap').onclick = () => {
 };
 document.getElementById('edNear').onclick = locate;
 document.getElementById('edClose').onclick = closeEditor;
-function clearTrip() { prefs.origin = null; prefs.dest = null; alertOn = false; savePrefs(); afterTripChange(); closeEditor(); toast(T`Trayecto quitado`); }
+function clearTrip() { prefs.origin = null; prefs.dest = null; alertOn = false; savePrefs(); afterTripChange(); closeEditor(); toast('Viaxe quitada'); }
 document.getElementById('tripClear').onclick = clearTrip;
 document.getElementById('edClearTop').onclick = clearTrip;
-document.getElementById('edClear').onclick = () => { prefs.origin = null; prefs.dest = null; alertOn = false; savePrefs(); afterTripChange(); closeEditor(); toast(T`Trayecto quitado`); };
+document.getElementById('edClear').onclick = () => { prefs.origin = null; prefs.dest = null; alertOn = false; savePrefs(); afterTripChange(); closeEditor(); toast('Viaxe quitada'); };
 document.getElementById('editor').addEventListener('click', e => { if (e.target.id === 'editor') closeEditor(); });
 document.getElementById('edSearch').addEventListener('input', renderSearch);
 document.getElementById('edResults').addEventListener('click', e => { const b = e.target.closest('.open'); if (!b) return; setTripStop(editing, +b.dataset.id); if (editing === 'origin') openEditor('dest'); else closeEditor(); });

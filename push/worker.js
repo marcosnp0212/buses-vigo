@@ -17,14 +17,14 @@ export default {
     const path = new URL(req.url).pathname;
 
     if (path === '/subscribe') {
-      const { sub, stop, line, lead = 5, minutes = 90, lang = 'es', stopName = '' } = body;
+      const { sub, stop, line, lead = 5, minutes = 90, stopName = '' } = body;
       if (!sub || typeof sub.endpoint !== 'string' || !/^https:\/\//.test(sub.endpoint)) return json({ error: 'bad subscription' }, 400);
       if (!Number.isInteger(stop) || stop <= 0 || typeof line !== 'string' || !/^[A-Z0-9]{1,12}$/i.test(line)) return json({ error: 'bad stop or line' }, 400);
       const until = Date.now() + Math.min(Math.max(+minutes || 90, 5), MAX_HOURS * 60) * 60000;
-      await env.DB.prepare(`INSERT INTO alerts (id, endpoint, stop, line, lead, until, lang, stop_name, message)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL)
-        ON CONFLICT(id) DO UPDATE SET endpoint = ?2, stop = ?3, line = ?4, lead = ?5, until = ?6, lang = ?7, stop_name = ?8, message = NULL`)
-        .bind(await hash(sub.endpoint), sub.endpoint, stop, line.toUpperCase(), Math.min(Math.max(+lead || 5, 1), 20), until, lang === 'gl' ? 'gl' : 'es', String(stopName).slice(0, 80)).run();
+      await env.DB.prepare(`INSERT INTO alerts (id, endpoint, stop, line, lead, until, stop_name, message)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, NULL)
+        ON CONFLICT(id) DO UPDATE SET endpoint = ?2, stop = ?3, line = ?4, lead = ?5, until = ?6, stop_name = ?7, message = NULL`)
+        .bind(await hash(sub.endpoint), sub.endpoint, stop, line.toUpperCase(), Math.min(Math.max(+lead || 5, 1), 20), until, String(stopName).slice(0, 80)).run();
       return json({ ok: true, until });
     }
     if (path === '/unsubscribe') {
@@ -64,10 +64,8 @@ async function check(env) {
     for (const a of alerts) {
       const e = est.filter(x => String(x.linea).trim().toUpperCase() === a.line && x.minutos >= 0 && x.minutos <= a.lead && x.metros >= 0).sort((p, q) => p.minutos - q.minutos)[0];
       if (!e) continue;
-      const name = a.stop_name || `${a.lang === 'gl' ? 'a parada' : 'la parada'} ${a.stop}`;
-      const msg = a.lang === 'gl'
-        ? { title: 'Sae xa', body: e.minutos <= 0 ? `O teu ${a.line} está chegando a ${name}` : `O teu ${a.line} chega a ${name} en ${e.minutos} min` }
-        : { title: 'Sal ya', body: e.minutos <= 0 ? `Tu ${a.line} está llegando a ${name}` : `Tu ${a.line} llega a ${name} en ${e.minutos} min` };
+      const name = a.stop_name || `a parada ${a.stop}`;
+      const msg = { title: 'Sae xa', body: e.minutos <= 0 ? `O teu ${a.line} está chegando a ${name}` : `O teu ${a.line} chega a ${name} en ${e.minutos} min` };
       await env.DB.prepare('UPDATE alerts SET message = ?2 WHERE id = ?1').bind(a.id, JSON.stringify({ ...msg, tag: 'bus-alert', url: `./?parada=${a.stop}` })).run();
       const status = await sendPush(a.endpoint, env);
       if (status === 404 || status === 410) await env.DB.prepare('DELETE FROM alerts WHERE id = ?1').bind(a.id).run();

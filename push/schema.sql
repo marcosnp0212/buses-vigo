@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS alerts (
   line TEXT NOT NULL,
   lead INTEGER NOT NULL,
   until INTEGER NOT NULL,
-  lang TEXT NOT NULL DEFAULT 'es',
   stop_name TEXT,
   message TEXT
 );

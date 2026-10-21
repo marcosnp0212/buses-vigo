@@ -214,9 +214,6 @@ button { -webkit-tap-highlight-color: transparent; }
 .about { gap: 14px; }
 .ab-head { display: flex; align-items: center; justify-content: space-between; }
 .ab-head h2 { margin: 0; font: 700 26px/1.1 var(--sign); }
-.seg { display: flex; gap: 6px; background: var(--raise); padding: 4px; border-radius: 12px; }
-.seg .btn { flex: 1; min-height: 40px; background: none; }
-.seg .btn[aria-pressed="true"] { background: var(--sheet); color: var(--ink); box-shadow: var(--shadow-float); }
 .ab-body { overflow: auto; overscroll-behavior: contain; }
 .ab-body p { margin: 0 0 10px; color: var(--muted); max-width: 60ch; }
 .ab-body h3 { margin: 16px 0 4px; font: 600 17px var(--text); }

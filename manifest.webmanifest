@@ -1,8 +1,8 @@
 {
   "name": "Buses Vigo",
   "short_name": "Buses Vigo",
-  "description": "Cuándo llega tu bus en Vigo, en tiempo real.",
-  "lang": "es",
+  "description": "Cando chega o teu bus en Vigo, en tempo real.",
+  "lang": "gl",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
