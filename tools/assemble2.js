@@ -33,6 +33,8 @@ t = t.replace('/*BASECSS*/', () => r('base.css'))
   .replace('/*TRIPBLOCK*/', () => r('tripblock2.js'))
   .replace('/*LOCATE*/', () => r('locate.js'))
   .replace('/*ALERT*/', () => r('alert.js'))
+  .replace('/*GALEGO*/', () => r('gl.js'))
+  .replace('/*PUSHCONFIG*/', () => r('push-config.js'))
   .replaceAll('__DATAVER__', ver);
 const js = t.match(/<script type="module">([\s\S]*)<\/script>/)[1];
 new Function('return async () => {' + js + '}'); // syntax check

@@ -1,0 +1,21 @@
+name = "buses-vigo-avisos"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# every minute: look at the stops with active alerts
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+# the web's address (scheme + host), the only one allowed to register alerts
+ALLOWED_ORIGIN = "https://marcosnp0212.github.io"
+# contact for the push services (required by VAPID)
+CONTACT = "mailto:CAMBIA-ESTO@example.com"
+# public VAPID key: printed by gen-vapid.mjs
+VAPID_PUBLIC = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "buses-vigo-avisos"
+# printed by: npx wrangler d1 create buses-vigo-avisos
+database_id = ""
