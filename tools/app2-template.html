@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buses Vigo</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+/*BASECSS*/
+/* ---- network version additions ---- */
+.trip-wrap { display: flex; align-items: center; max-width: 100%; min-width: 0; }
+.trip-wrap .trip-pill { background: none; box-shadow: none; padding-right: 8px; min-width: 0; }
+.trip-x { border: 0; background: var(--soft); border-radius: 999px; width: 26px; height: 26px; margin-right: 6px; cursor: pointer; font-weight: 800; flex: none; }
+.trip-x[hidden] { display: none; }
+.edside { display: flex; flex-direction: column; gap: 6px; }
+.edres { min-height: 0; }
+.ed { max-height: calc(100dvh - 80px); }
+.lines-pill { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-weight: 800; font-size: 13px; border: 0; cursor: pointer; }
+.lines-pill .sw { display: flex; }
+.lines-pill .sw i { width: 10px; height: 10px; border-radius: 50%; margin-left: -3px; border: 2px solid var(--card); }
+.mode-pill { display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 14px; font-weight: 800; font-size: 13px; }
+.mode-pill button { border: 0; background: var(--soft); border-radius: 999px; width: 26px; height: 26px; cursor: pointer; font-weight: 800; }
+
+.picker { position: fixed; inset: 0; z-index: 1200; background: rgba(10, 12, 8, 0.38); display: flex; align-items: flex-start; justify-content: center; padding: calc(60px + env(safe-area-inset-top)) 12px 12px; }
+.picker[hidden] { display: none; }
+.pk { width: min(620px, 100%); max-height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+.pkhead { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pkhead input { flex: 1 1 180px; min-width: 0; border: 0; background: var(--soft); border-radius: 12px; padding: 11px 12px; font: 600 14px var(--sans); color: var(--fg); }
+.pkhead .btn { flex: none; padding: 10px 12px; }
+.pkgrid { overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
+.lt { display: flex; align-items: center; gap: 10px; text-align: left; border: 2px solid transparent; background: var(--soft); border-radius: 14px; padding: 8px 10px; cursor: pointer; min-width: 0; }
+.lt[aria-pressed="true"] { border-color: var(--fg); background: var(--card); }
+.lt[aria-pressed="false"] .badge { opacity: 0.45; }
+.lt span.nm { font-size: 11px; color: var(--muted); line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pkfoot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+
+.stopcard { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+.stopcard .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.stopcard .head b { font-size: 16px; line-height: 1.25; }
+.stopcard .head .x { border: 0; background: var(--soft); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-weight: 800; flex: none; }
+.stopcard .meta { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 12px; }
+.stopcard .meta .badge { height: 18px; min-width: 26px; font-size: 10px; padding: 0 6px; }
+.stopcard .list { overflow: auto; margin-top: 4px; }
+.arr { display: flex; align-items: center; gap: 10px; padding: 9px 6px; border-top: 1px solid var(--line); cursor: pointer; border-radius: 10px; width: 100%; text-align: left; border-left: 0; border-right: 0; border-bottom: 0; background: none; }
+.arr:hover, .arr:focus-visible, .arr.sel { background: var(--soft); }
+.arr .d { flex: 1; min-width: 0; font-size: 13px; }
+.arr .d span { display: block; color: var(--muted); font-size: 11px; }
+.arr .m { font-size: 18px; font-weight: 800; white-space: nowrap; text-align: right; }
+.arr .m small { display: block; font-size: 11px; color: var(--muted); font-weight: 600; }
+.stopacts { display: flex; gap: 6px; margin-top: 8px; }
+.stopacts .btn { padding: 9px 10px; font-size: 12px; }
+
+.busp { display: inline-flex; align-items: center; gap: 4px; padding: 0 9px 0 4px; height: 28px; border-radius: 999px; color: #fff; font-weight: 800; font-size: 12px; border: 2px solid var(--bus-ring); box-shadow: 0 2px 8px rgba(0,0,0,.35); white-space: nowrap; }
+.busp b { background: rgba(255,255,255,.22); border-radius: 999px; padding: 1px 7px; font-size: 11px; }
+.busp.sel { outline: 3px solid rgba(90,72,184,.55); }
+.busp.ghost { border-style: dashed; border-width: 2px; opacity: 0.9; }
+.stopmark { width: 22px; height: 22px; border-radius: 50%; background: #ffcc33; border: 4px solid #1f211d; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+@media (max-width: 760px) {
+  .pk { padding: 12px; }
+  .pkgrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  #stopPanel { left: 10px; right: 10px; width: auto; bottom: calc(10px + env(safe-area-inset-bottom)); max-height: 55%; }
+}
+#stopPanel { position: fixed; z-index: 1001; left: max(16px, env(safe-area-inset-left)); bottom: calc(16px + env(safe-area-inset-bottom)); width: 380px; max-height: calc(100% - 90px); display: flex; flex-direction: column; }
+#stopPanel[hidden], .stack[hidden], .mode-pill[hidden] { display: none; }
+@media (max-width: 760px) { #stopPanel { left: 10px; right: 10px; width: auto; bottom: calc(10px + env(safe-area-inset-bottom)); max-height: 48%; } .stopcard .list { min-height: 0; } }
+</style>
+</head>
+<body>
+<div id="map" role="application" aria-label="Mapa de buses de Vigo"></div>
+
+<div class="top">
+  <div class="pill trip-wrap"><button class="trip-pill" id="tripPill" title="Cambiar mi trayecto"><span class="dot"></span><span class="t" id="tripText">…</span></button><button class="trip-x" id="tripClear" aria-label="Quitar trayecto" title="Quitar trayecto">✕</button></div>
+  <button class="pill lines-pill" id="linesPill"><span class="sw" id="linesSw"></span><span id="linesTxt">Líneas</span></button>
+  <div class="pill mode-pill" id="modePill" hidden><span id="modeTxt"></span><button id="modeClose" aria-label="Volver a todas las líneas">✕</button></div>
+</div>
+
+<div class="ctl">
+  <button id="zin" aria-label="Acercar">+</button>
+  <button id="zout" aria-label="Alejar">−</button>
+  <button id="themeBtn" aria-label="Tema"></button>
+  <button id="locBtn" aria-label="Mi ubicación"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg></button>
+  <button id="recenter" aria-label="Ver mi trayecto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+</div>
+
+<div class="stack" id="stack">
+  <section class="card hero" id="hero" aria-live="polite"><div class="empty">Cargando datos en tiempo real…</div></section>
+  <section class="card listcard" id="nextCard"><h2>Próximas en tu parada</h2><div id="nextList"></div></section>
+</div>
+
+<section class="card stopcard" id="stopPanel" hidden aria-live="polite"></section>
+<section class="card listcard buscard" id="busCard" hidden aria-live="polite"></section>
+
+<div class="picker" id="picker" hidden>
+  <div class="card pk" role="dialog" aria-label="Elegir líneas">
+    <div class="pkhead">
+      <input id="pkSearch" type="search" placeholder="Busca una línea: 15C, Universidade, Samil…" autocomplete="off">
+      <button class="btn" id="pkAll">Todas</button>
+      <button class="btn" id="pkNone">Ninguna</button>
+      <button class="btn" id="pkMine">Las de mi trayecto</button>
+    </div>
+    <div class="pkgrid" id="pkGrid"></div>
+    <div class="pkfoot"><span id="pkInfo"></span><button class="btn pri" id="pkClose" style="flex:none">Listo</button></div>
+  </div>
+</div>
+
+<div class="editor" id="editor" hidden>
+  <div class="card ed" role="dialog" aria-label="Cambiar trayecto">
+    <div class="edrow">
+      <div class="edstops">
+        <button class="edbtn" id="edOriginBtn"><span>Subo en</span><b id="edOrigin"></b></button>
+        <button class="edbtn" id="edDestBtn"><span>Bajo en</span><b id="edDest"></b></button>
+      </div>
+      <div class="edside"><button class="swap" id="edSwap" aria-label="Invertir trayecto" title="Invertir trayecto">⇅</button><button class="swap" id="edClearTop" aria-label="Quitar trayecto" title="Quitar trayecto">✕</button></div>
+    </div>
+    <div class="edsearch"><input id="edSearch" type="search" autocomplete="off"><button class="btn" id="edNear">Cerca de mí</button></div>
+    <div class="edres" id="edResults"></div>
+    <div class="actions"><button class="btn" id="edClear">Quitar trayecto</button><button class="btn pri" id="edClose">Cerrar</button></div>
+  </div>
+</div>
+<div class="pill toast" id="toast" role="status"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script>
+const NET = /*NET*/{};
+const SCHED = /*SCHED*/{};
+const API = 'https://datos.vigo.org/vci_api_app/api2.jsp?ttl=5&tipo=TRANSPORTE-ESTIMACION-PARADA&id=';
+const MAX_MIN = 35, MAX_WRAP_M = 6000, STOP_POLL_MS = 15000;
+
+// ---------- prefs ----------
+const prefs = { origin: 14224, dest: 14105, sel: null };
+try { Object.assign(prefs, JSON.parse(localStorage.getItem('busprefs2') || '{}')); } catch (e) {}
+const savePrefs = () => { try { localStorage.setItem('busprefs2', JSON.stringify(prefs)); } catch (e) {} };
+
+// ---------- network ----------
+function hav(a, b) {
+  const t = Math.PI / 180, dLat = (b[0] - a[0]) * t, dLon = (b[1] - a[1]) * t;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * t) * Math.cos(b[0] * t) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(s));
+}
+const LINE = {}; for (const l of NET.lines) LINE[l.code] = l;
+const LINE_COLORS = {}; for (const l of NET.lines) LINE_COLORS[l.code] = l.color;
+const ROUTES = NET.routes.filter(r => LINE[r.line]);
+const LINES = NET.lines.map(l => l.code).filter(c => ROUTES.some(r => r.line === c));
+const STOPS = new Map();
+for (const [id, [name, lat, lon]] of Object.entries(NET.stops)) STOPS.set(+id, { id: +id, name, lat, lon, lines: new Set(), routes: [] });
+for (const r of ROUTES) {
+  r.color = LINE[r.line].color;
+  r.cum = [0];
+  for (let i = 1; i < r.coords.length; i++) r.cum.push(r.cum[i - 1] + hav(r.coords[i - 1], r.coords[i]));
+  r.length = r.cum[r.cum.length - 1];
+  r.stops = r.stops.map(([id, d]) => ({ ...STOPS.get(id), d, lines: undefined, routes: undefined }));
+  r.stopById = new Map(r.stops.map(s => [s.id, s]));
+  for (const s of r.stops) { const S = STOPS.get(s.id); S.lines.add(r.line); S.routes.push(r); }
+}
+// first visit: every line; afterwards, whatever the user picked last time
+const sel = new Set(Array.isArray(prefs.sel) ? prefs.sel.filter(c => LINES.includes(c)) : LINES);
+function pointAt(r, d) {
+  d = Math.max(0, Math.min(r.length, d));
+  let lo = 0, hi = r.cum.length - 1;
+  while (lo < hi - 1) { const m = (lo + hi) >> 1; if (r.cum[m] <= d) lo = m; else hi = m; }
+  const seg = r.cum[hi] - r.cum[lo] || 1, f = (d - r.cum[lo]) / seg, a = r.coords[lo], b = r.coords[hi];
+  return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+}
+function slice(r, d0, d1) { // polyline between two distances along the route
+  d0 = Math.max(0, d0); d1 = Math.min(r.length, d1); if (d1 <= d0) return [];
+  const out = [pointAt(r, d0)];
+  for (let i = 0; i < r.coords.length; i++) if (r.cum[i] > d0 && r.cum[i] < d1) out.push(r.coords[i]);
+  out.push(pointAt(r, d1)); return out;
+}
+const routesOfLine = l => ROUTES.filter(r => r.line === l);
+const otherRoute = r => ROUTES.find(x => x.line === r.line && x.dir !== r.dir && x.main);
+const MAINS = ROUTES.filter(r => r.main);
+const stopName = id => (STOPS.get(id) || {}).name || ('Parada ' + id);
+const shortName = n => n.replace(/^(Rúa|Avda\.|Avenida|Praza|Estrada|Camiño)\s+(d[oae]s?\s+)?/i, '').replace(/\s*\(CUVI\)/, '');
+const textOn = hex => { const c = parseInt(hex.slice(1), 16), r = c >> 16, g = (c >> 8) & 255, b = c & 255; return (r * 299 + g * 587 + b * 114) / 1000 > 165 ? '#1f211d' : '#ffffff'; };
+const badge = (l, small) => `<span class="badge" style="background:${LINE_COLORS[l] || '#666'};color:${textOn(LINE_COLORS[l] || '#666')}${small ? ';height:18px;min-width:26px;font-size:10px;padding:0 6px' : ''}">${l}</span>`;
+
+// ---------- map ----------
+// ---------- theme: auto (system) / light / dark ----------
+const sysDark = matchMedia('(prefers-color-scheme: dark)');
+let dark = false;
+function computeDark() { return prefs.theme === 'dark' || (prefs.theme !== 'light' && sysDark.matches); }
+dark = computeDark();
+document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+const map = L.map('map', { zoomControl: false, preferCanvas: false }).setView([42.22, -8.72], 13);
+// Base map: OpenFreeMap vector styles (crisp at every zoom, no key). The dark style is re-tinted to match the cards.
+// If the vector map can't load, fall back to Esri raster tiles.
+let baseLayer = null; const styleCache = {};
+const ATTR = '© OpenStreetMap · OpenFreeMap · datos: Concello de Vigo / Vitrasa';
+// Our own palette on top of OpenFreeMap: the stock dark style is nearly black (streets #181818 on #0c0c0c).
+const DARK_PAINT = {
+  background: { 'background-color': '#1b1f24' },
+  water: { 'fill-color': '#0f1419' }, waterway: { 'line-color': '#0f1419' },
+  landuse_residential: { 'fill-color': '#1e2328' }, landcover_wood: { 'fill-color': '#1b2420' }, landuse_park: { 'fill-color': '#1b2420' },
+  building: { 'fill-color': '#252a30' },
+  road_area_pier: { 'fill-color': '#1b1f24' }, road_pier: { 'line-color': '#1b1f24' },
+  'aeroway-area': { 'fill-color': '#22272d' }, 'aeroway-runway': { 'line-color': '#2b3138' }, 'aeroway-taxiway': { 'line-color': '#262b31' },
+  highway_path: { 'line-color': '#2a3036' }, highway_minor: { 'line-color': '#30363d' },
+  highway_major_casing: { 'line-color': '#3b424a' }, highway_major_inner: { 'line-color': '#363d45' }, highway_major_subtle: { 'line-color': '#363d45' },
+  highway_motorway_casing: { 'line-color': '#4a525b' }, highway_motorway_inner: { 'line-color': '#404850' }, highway_motorway_subtle: { 'line-color': '#363d45' },
+  railway: { 'line-color': '#2c3238' }, railway_minor: { 'line-color': '#2c3238' }, railway_transit: { 'line-color': '#2c3238' },
+  railway_dashline: { 'line-color': '#1b1f24' }, railway_minor_dashline: { 'line-color': '#1b1f24' }, railway_transit_dashline: { 'line-color': '#1b1f24' },
+};
+function tint(style, isDark) {
+  for (const l of style.layers) {
+    const p = l.paint || (l.paint = {});
+    if (isDark) {
+      Object.assign(p, DARK_PAINT[l.id] || {});
+      if (l.type === 'symbol') {
+        p['text-color'] = /^place/.test(l.id) ? '#b4bcc4' : /^water/.test(l.id) ? '#5b6b79' : '#8d969f';
+        p['text-halo-color'] = '#1b1f24'; p['text-halo-width'] = 1.2;
+      }
+    } else {
+      if (l.type === 'background') p['background-color'] = '#f2f3f0';
+      if (/^water/.test(l.id) && l.type === 'fill') p['fill-color'] = '#cdd8de';
+    }
+  }
+  return style;
+}
+async function setBase() {
+  const name = dark ? 'dark' : 'positron';
+  try {
+    if (!L.maplibreGL) throw new Error('sin maplibre');
+    if (!styleCache[name]) styleCache[name] = tint(await (await fetch('https://tiles.openfreemap.org/styles/' + name)).json(), dark);
+    const layer = L.maplibreGL({ style: styleCache[name], attribution: ATTR, interactive: false });
+    if (baseLayer) map.removeLayer(baseLayer);
+    baseLayer = layer.addTo(map);
+  } catch (e) {
+    const b = dark ? 'World_Dark_Gray' : 'World_Light_Gray';
+    if (baseLayer) map.removeLayer(baseLayer);
+    baseLayer = L.layerGroup([
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/' + b + '_Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 19, attribution: 'Tiles © Esri · datos: Concello de Vigo / Vitrasa' }),
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/' + b + '_Reference/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 19, pane: 'shadowPane' })]).addTo(map);
+  }
+}
+setBase();
+function applyTheme() {
+  dark = computeDark();
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  setBase(); drawRoutes(); for (const [id, m] of stopMarkers) m.setStyle(stopStyle(id)); restyleBuses(); renderThemeBtn();
+}
+function renderThemeBtn() {
+  const b = document.getElementById('themeBtn'); if (!b) return;
+  const t = prefs.theme || 'auto';
+  b.innerHTML = t === 'dark' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>'
+    : t === 'light' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>'
+    : '<span style="font-size:12px;font-weight:800">A</span>';
+  const label = 'Tema: ' + (t === 'dark' ? 'oscuro' : t === 'light' ? 'claro' : 'automático');
+  b.setAttribute('aria-label', label); b.title = label;
+}
+sysDark.addEventListener('change', () => { if (!prefs.theme || prefs.theme === 'auto') applyTheme(); });
+const canvas = L.canvas({ padding: 0.3, tolerance: 6 });
+const routeLayer = L.layerGroup().addTo(map);
+const stopLayer = L.layerGroup().addTo(map);
+
+let mode = 'explore', focusStop = null, selectedBus = null;
+
+function drawRoutes() {
+  routeLayer.clearLayers();
+  const casing = dark ? '#171a1e' : '#ffffff';
+  if (mode === 'explore') {
+    const many = sel.size > 8, w = many ? (map.getZoom() >= 15 ? 3 : 2) : 3.5;
+    for (const r of MAINS) if (sel.has(r.line)) {
+      if (!many) L.polyline(r.coords, { color: casing, weight: 7, opacity: 0.6, interactive: false, renderer: canvas }).addTo(routeLayer);
+      L.polyline(r.coords, { color: r.color, weight: w, opacity: many ? 0.55 : 0.85, interactive: false, renderer: canvas }).addTo(routeLayer);
+    }
+  } else {
+    // stop mode: every route that serves this stop, faint; the stretch each bus still has to run until the stop, bold
+    const shown = new Set();
+    for (const b of buses.values()) shown.add(b.route);
+    for (const r of STOPS.get(focusStop).routes) if (r.main) shown.add(r);
+    for (const r of shown) L.polyline(r.coords, { color: r.color, weight: 3, opacity: 0.22, interactive: false, renderer: canvas }).addTo(routeLayer);
+    for (const b of buses.values()) {
+      const segs = b.toStop || [];
+      for (const s of segs) {
+        if (!b.info.ghost) L.polyline(s, { color: casing, weight: 9, opacity: 0.7, interactive: false, renderer: canvas }).addTo(routeLayer);
+        L.polyline(s, { color: b.route.color, weight: selectedBus === b.id ? 7 : 5, opacity: 1, dashArray: b.info.ghost ? '6 8' : null, interactive: false, renderer: canvas }).addTo(routeLayer);
+      }
+    }
+  }
+}
+
+const stopMarkers = new Map();
+function stopStyle(id) {
+  if (id === prefs.dest) return { radius: 8, color: dark ? '#171a1e' : '#1d2024', weight: 3, fillColor: '#ffcc33', fillOpacity: 1 };
+  if (id === prefs.origin) return { radius: 7, color: dark ? '#e9ecef' : '#1d2024', weight: 4, fillColor: dark ? '#22262b' : '#fff', fillOpacity: 1 };
+  return { radius: 4.5, color: dark ? '#aab3bc' : '#6b737c', weight: 1.5, fillColor: dark ? '#22262b' : '#fff', fillOpacity: 1 };
+}
+for (const s of STOPS.values()) {
+  const m = L.circleMarker([s.lat, s.lon], { ...stopStyle(s.id), renderer: canvas });
+  m.on('click', () => enterStop(s.id));
+  m.bindTooltip(s.name, { direction: 'top', offset: [0, -6] });
+  stopMarkers.set(s.id, m);
+}
+let focusMarker = null, stopRouteStops = new Set();
+// stops along the trips of the buses shown in stop mode (the only ones worth showing there)
+function collectStopRouteStops() { stopRouteStops = new Set(); for (const b of buses.values()) for (const r of (b.info.chain || [b.route])) for (const st of r.stops) stopRouteStops.add(st.id); }
+function refreshStops() {
+  const z = map.getZoom(), bounds = map.getBounds().pad(0.2);
+  for (const [id, m] of stopMarkers) {
+    const s = STOPS.get(id), special = id === prefs.origin || id === prefs.dest;
+    let visible;
+    if (mode === 'stop') visible = special || (z >= 14 && bounds.contains([s.lat, s.lon]) && stopRouteStops.has(id));
+    else visible = special || (bounds.contains([s.lat, s.lon]) && ((z >= 14 && [...s.lines].some(l => sel.has(l))) || z >= 16));
+    if (id === focusStop) visible = false;
+    if (visible && !stopLayer.hasLayer(m)) { m.setStyle(stopStyle(id)); stopLayer.addLayer(m); }
+    if (!visible && stopLayer.hasLayer(m)) stopLayer.removeLayer(m);
+  }
+}
+map.on('zoomend moveend', refreshStops);
+map.on('zoomend', () => { restyleBuses(); if (mode === 'explore') drawRoutes(); });
+
+// ---------- line picker ----------
+function renderLinesPill() {
+  const list = [...sel];
+  document.getElementById('linesSw').innerHTML = list.slice(0, 5).map(l => `<i style="background:${LINE_COLORS[l]}"></i>`).join('');
+  document.getElementById('linesTxt').textContent = list.length === LINES.length ? 'Todas las líneas' : list.length === 0 ? 'Elegir líneas' : list.length <= 3 ? list.join(' · ') : `${list.length} líneas`;
+}
+function renderPicker() {
+  const q = norm(document.getElementById('pkSearch').value.trim());
+  const list = NET.lines.filter(l => LINES.includes(l.code) && (!q || norm(l.code + ' ' + l.name).includes(q)));
+  document.getElementById('pkGrid').innerHTML = list.map(l => `<button class="lt" data-l="${l.code}" aria-pressed="${sel.has(l.code)}">${badge(l.code)}<span class="nm">${niceRuta(l.name)}</span></button>`).join('') || '<div class="empty">Ninguna línea coincide.</div>';
+  document.getElementById('pkInfo').textContent = `${sel.size} de ${LINES.length} líneas en el mapa`;
+}
+function selChanged() { prefs.sel = [...sel]; savePrefs(); renderLinesPill(); renderPicker(); if (mode === "explore") { clearBuses(); drawRoutes(); refreshStops(); clearTimeout(selT); selT = setTimeout(() => restartPolling(true), 600); } }
+let selT;
+document.getElementById('linesPill').onclick = () => { if (mode === 'stop') exitStop(); document.getElementById('picker').hidden = false; document.getElementById('pkSearch').value = ''; renderPicker(); };
+document.getElementById('pkGrid').addEventListener('click', e => { const b = e.target.closest('.lt'); if (!b) return; const l = b.dataset.l; sel.has(l) ? sel.delete(l) : sel.add(l); selChanged(); });
+document.getElementById('pkSearch').addEventListener('input', renderPicker);
+document.getElementById('pkAll').onclick = () => { LINES.forEach(l => sel.add(l)); selChanged(); };
+document.getElementById('pkNone').onclick = () => { sel.clear(); selChanged(); };
+document.getElementById('pkMine').onclick = () => { if (!hasTrip()) { toast('Primero elige tu trayecto'); return; } sel.clear(); for (const r of ROUTES) if (r.stopById.has(prefs.origin) && r.stopById.has(prefs.dest)) sel.add(r.line); selChanged(); };
+document.getElementById('pkClose').onclick = () => { document.getElementById('picker').hidden = true; };
+document.getElementById('picker').addEventListener('click', e => { if (e.target.id === 'picker') e.target.hidden = true; });
+
+// ---------- controls ----------
+document.getElementById('zin').onclick = () => map.zoomIn();
+document.getElementById('zout').onclick = () => map.zoomOut();
+document.getElementById('recenter').onclick = () => { follow = null; if (mode === 'stop') fitStop(); else if (hasTrip()) fitTrip(); else map.setView([42.22, -8.72], 13); };
+document.getElementById('locBtn').onclick = locate;
+document.getElementById('themeBtn').onclick = () => {
+  const order = ['auto', 'light', 'dark'];
+  prefs.theme = order[(order.indexOf(prefs.theme || 'auto') + 1) % 3]; savePrefs(); applyTheme();
+  toast(prefs.theme === 'auto' ? 'Tema automático (según tu sistema)' : prefs.theme === 'light' ? 'Tema claro' : 'Tema oscuro');
+};
+renderThemeBtn();
+document.getElementById('tripPill').onclick = () => openEditor('origin');
+document.getElementById('modeClose').onclick = () => exitStop();
+const hasTrip = () => !!(prefs.origin && prefs.dest);
+function renderTripText() {
+  document.getElementById('tripText').textContent = hasTrip() ? `${shortName(stopName(prefs.origin))} → ${shortName(stopName(prefs.dest))}` : prefs.origin ? `${shortName(stopName(prefs.origin))} → elige destino` : 'Elegir mi trayecto';
+  // the "your bus" cards only make sense with a trip
+  document.getElementById('stack').hidden = mode === 'stop' || !hasTrip();
+  document.getElementById('tripClear').hidden = !prefs.origin && !prefs.dest;
+}
+let toastT;
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200); }
+function fitTrip() {
+  const o = STOPS.get(prefs.origin), d = STOPS.get(prefs.dest); if (!o || !d) return;
+  const wide = innerWidth > 760;
+  map.fitBounds([[o.lat, o.lon], [d.lat, d.lon]], wide ? { paddingTopLeft: [400, 80], paddingBottomRight: [60, 40] } : { paddingTopLeft: [20, 110], paddingBottomRight: [20, innerHeight * 0.5] });
+}
+let fitted = false;
+new ResizeObserver(() => { map.invalidateSize(); if (!fitted && map.getSize().x) { fitted = true; fitTrip(); } }).observe(document.getElementById('map'));
+
+// ---------- data ----------
+const SMALL = new Set(['de', 'do', 'da', 'dos', 'das', 'por', 'e', 'y']);
+function niceRuta(r) {
+  return String(r).replace(/["*]/g, '').replace(/^\s*\d+\s+(?=\D)/, '').trim().toLowerCase()
+    .replace(/\s*[-–]\s*/g, ' – ').split(' ')
+    .map((w, i) => (i && SMALL.has(w)) ? w : w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ').replace(/\bP\.\s?e\./i, 'P.E.').replace(/\bFf\.?\s?cc\.?/i, 'FF.CC.');
+}
+async function fetchStop(id) {
+  const res = await fetch(API + id, { cache: 'no-store' });
+  const txt = new TextDecoder('iso-8859-1').decode(await res.arrayBuffer());
+  // the real-time feed and the timetable name a few lines differently
+  const ALIAS = { TUR: 'TURISTICO' };
+  return (JSON.parse(txt).estimaciones || []).map(e => { const l = String(e.linea).trim(); return { ...e, linea: ALIAS[l] || l, ruta: niceRuta(e.ruta) }; });
+}
+async function pool(items, n, fn) {
+  const out = new Map(); let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const id = items[i++]; try { out.set(id, await fn(id)); } catch { out.set(id, null); } } }));
+  return out;
+}
+let results = new Map(), lastOk = 0;
+
+// ---------- buses ----------
+const pos = o => o._p || (o._p = pointAt(o.r, o.along));
+// which trip a bus seen from this stop is on: the main trip if only one direction's main passes here,
+// otherwise the most frequent variant, as long as the direction is unambiguous
+function routeFor(line, stopId) {
+  const all = routesOfLine(line).filter(r => r.stopById.has(stopId));
+  const mains = all.filter(r => r.main);
+  if (mains.length === 1) return mains[0];
+  if (mains.length > 1) return null;
+  if (!all.length || new Set(all.map(r => r.dir)).size > 1) return null;
+  return all.sort((a, b) => b.rank - a.rank)[0];
+}
+// explore mode: a bus is seen from several stops; keep the closest observation of each
+function estimateExplore() {
+  const obs = [];
+  for (const [stopId, list] of results) {
+    if (!list) continue;
+    for (const e of list) {
+      if (!sel.has(e.linea) || e.minutos > MAX_MIN || e.metros < 0) continue;
+      let r = routeFor(e.linea, stopId); if (!r) continue;
+      let along = r.stopById.get(stopId).d - e.metros;
+      if (along < 0) { const o = otherRoute(r); if (!o || -along > MAX_WRAP_M) continue; along = o.length + along; r = o; }
+      obs.push({ r, along, metros: e.metros, min: e.minutos, ruta: e.ruta, stop: stopId });
+    }
+  }
+  obs.sort((a, b) => a.metros - b.metros);
+  const found = [];
+  for (const x of obs) { const tol = 300 + 0.6 * x.metros; if (!found.find(f => f.r.line === x.r.line && hav(pos(f), pos(x)) < tol)) found.push(x); }
+  return found;
+}
+// stop mode: every estimate at the stop is one bus heading there
+function estimateStop() {
+  const list = results.get(focusStop) || [];
+  const found = [], ghostSeen = new Map();
+  for (const e of list) {
+    // metros = -1: a scheduled departure the system can't locate yet (bus not out, or no GPS)
+    if (e.metros < 0) {
+      const r = routesOfLine(e.linea).filter(x => x.stopById.has(focusStop)).sort((a, b) => b.main - a.main || b.rank - a.rank)[0];
+      const key = r && r.id;
+      if (r && !ghostSeen.has(key)) {
+        const g = { r, base: r, chain: [r], along: 0, ghost: true, noGps: true, metros: r.stopById.get(focusStop).d, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop, head: r.stops[0].name, laps: [e.minutos] };
+        ghostSeen.set(key, g); found.push(g);
+      } else if (r) {
+        // a later departure from the same head: same marker, one more time on it
+        const g = ghostSeen.get(key); g.laps.push(e.minutos);
+        found.push({ r: null, noGps: true, lapOf: g, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop, head: r.stops[0].name });
+      } else found.push({ r: null, noGps: true, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop, head: null });
+      continue;
+    }
+    const onMap = true;
+    const rs = onMap ? routesOfLine(e.linea).filter(r => r.stopById.has(focusStop)).sort((a, b) => b.main - a.main || b.rank - a.rank) : [];
+    if (!rs.length) { found.push({ r: null, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop }); continue; }
+    // with both directions through the stop, prefer the one where the bus is already on the trip
+    let best = null;
+    for (const r of rs) {
+      // walk back from the stop along the bus's trips: this one, then the previous direction
+      // (or the same loop for circular lines), as many times as the distance needs
+      let left = e.metros - r.stopById.get(focusStop).d, chain = [r], cur = r;
+      while (left > 0 && chain.length < 10) { cur = otherRoute(cur) || cur; chain.unshift(cur); if (left <= cur.length) break; left -= cur.length; }
+      if (left > 0 && chain.length >= 10) continue;
+      const along = left <= 0 ? -left : chain[0].length - left;
+      const score = (chain.length - 1) * 2 + (r.main ? 0 : 1);
+      if (!best || score < best.score) best = { r: chain[0], along, score, base: r, chain };
+    }
+    if (!best) { found.push({ r: null, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop }); continue; }
+    found.push({ r: best.r, base: best.base, chain: best.chain, along: best.along, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop });
+  }
+  return found;
+}
+const buses = new Map(); let nextId = 1, follow = null;
+function busIcon(b) {
+  const r = b.route, fg = textOn(r.color);
+  if (mode === 'stop') {
+    const L3 = (b.info.laps || [b.info.min]), t = L3.slice(0, 3).map(m => m <= 0 ? 'ya' : m + '′').join(' · ') + (L3.length > 3 ? ' …' : '');
+    const html = b.info.ghost
+      ? `<div class="busp ghost${selectedBus === b.id ? ' sel' : ''}" style="border-color:${r.color};color:var(--fg);background:var(--card)"><b style="background:${r.color};color:${fg}">${r.line}</b>${t} prog.</div>`
+      : `<div class="busp${selectedBus === b.id ? ' sel' : ''}" style="background:${r.color};color:${fg}"><b>${r.line}</b>${t}</div>`;
+    return L.divIcon({ className: '', iconSize: null, iconAnchor: [24, 14], html });
+  }
+  const mine = follow === b.id || (heroBus && heroBus.id === b.id);
+  // size follows the zoom so a whole-city view stays readable
+  const z = map.getZoom(), size = mine ? 40 : z <= 12 ? 18 : z === 13 ? 24 : z === 14 ? 28 : 32;
+  const label = size >= 24 || mine ? r.line : '';
+  const fs = Math.max(8, Math.round(size * (r.line.length > 3 ? 0.28 : r.line.length > 2 ? 0.32 : 0.36)));
+  return L.divIcon({ className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
+    html: `<div class="busm${mine ? ' mine' : ''}" style="background:${r.color};color:${fg};font-size:${fs}px;width:${size}px;height:${size}px;border-width:${size < 24 ? 2 : 3}px">${label}</div>` });
+}
+function clearBuses() { for (const b of buses.values()) map.removeLayer(b.marker); buses.clear(); follow = null; selectedBus = null; }
+function updateBuses(found, pollMs) {
+  const seen = new Set();
+  for (const f of found) {
+    if (!f.r) continue;
+    let best = null, bestDist = 3500;
+    for (const b of buses.values()) { if (seen.has(b.id) || b.route !== f.r || !!b.info.ghost !== !!f.ghost) continue; const dd = f.along - b.fix; if (dd > -3000 && Math.abs(dd) < bestDist) { best = b; bestDist = Math.abs(dd); } }
+    const speed = f.ghost ? 0 : f.min > 0 ? Math.min(f.metros / (f.min * 60), 12) : 4;
+    if (best) {
+      const stale = Math.abs(f.along - best.fix) < 1 && f.stop === best.info.stop;
+      const target = f.along + speed * pollMs / 1000;
+      if (target - best.shown > 3000) best.shown = f.along;
+      if (!stale) best.v = Math.min(Math.max((target - best.shown) / (pollMs / 1000), 0), 20); else if (best.v === 0) best.v = speed * 0.7;
+      best.fix = f.along; best.info = f; seen.add(best.id); best.marker.setIcon(busIcon(best));
+    } else {
+      const b = { id: nextId++, route: f.r, fix: f.along, shown: f.along, v: speed, info: f };
+      b.marker = L.marker(pointAt(f.r, f.along), { icon: null, zIndexOffset: 1000, keyboard: false });
+      b.marker.setIcon(busIcon(b)); b.marker.addTo(map);
+      b.marker.on('click', () => { if (mode === 'stop') selectArrival(b.id); else showBusCard(b); });
+      buses.set(b.id, b); seen.add(b.id);
+    }
+  }
+  for (const [id, b] of buses) if (!seen.has(id)) { map.removeLayer(b.marker); buses.delete(id); if (follow === id) follow = null; if (busCardId === id) busCardId = null; if (selectedBus === id) selectedBus = null; }
+  if (mode === 'explore') for (const b of buses.values()) b.marker.bindTooltip(`<b>${b.route.line}</b> → ${b.info.ruta}`, { direction: 'top', offset: [0, -14] });
+}
+function restyleBuses() { for (const b of buses.values()) b.marker.setIcon(busIcon(b)); }
+function segmentsToStop(b) { // stretch from the bus to the focused stop (possibly across the end of the other direction)
+  const base = b.info.base || b.route, sd = base.stopById.get(focusStop).d, chain = b.info.chain || [base];
+  if (chain.length === 1) return [slice(base, b.shown, sd)];
+  return chain.map((r, i) => i === 0 ? slice(r, b.shown, r.length) : i === chain.length - 1 ? slice(r, 0, sd) : r.coords);
+}
+let lastFrame = performance.now(), lastSeg = 0;
+setInterval(() => {
+  const now = performance.now(), dt = Math.min((now - lastFrame) / 1000, 30); lastFrame = now;
+  for (const b of buses.values()) {
+    const cap = mode === 'stop' && b.info.base === b.route && (b.info.chain || []).length <= 1 ? b.route.stopById.get(focusStop).d : b.route.length;
+    b.shown = Math.max(b.shown, Math.min(b.shown + b.v * dt, b.fix + 1500, cap));
+    b.marker.setLatLng(pointAt(b.route, b.shown));
+  }
+  if (mode === 'stop' && now - lastSeg > 1000) { lastSeg = now; for (const b of buses.values()) b.toStop = segmentsToStop(b); drawRoutes(); }
+  if (follow && buses.has(follow)) map.panTo(buses.get(follow).marker.getLatLng(), { animate: true, duration: 0.5, noMoveStart: true });
+}, 100);
+map.on('dragstart', () => { if (follow) { follow = null; if (mode === 'explore') { renderHero(); restyleBuses(); } } });
+
+// ---------- stop mode ----------
+function enterStop(id) {
+  if (mode !== 'stop') clearBuses();
+  mode = 'stop'; focusStop = id; selectedBus = null;
+  clearBuses();
+  document.getElementById('stack').hidden = true;
+  document.getElementById('busCard').hidden = true;
+  document.getElementById('picker').hidden = true;
+  const s = STOPS.get(id);
+  document.getElementById('modePill').hidden = false;
+  document.getElementById('modeTxt').textContent = `Parada ${id}`;
+  if (focusMarker) map.removeLayer(focusMarker);
+  focusMarker = L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', iconSize: [22, 22], iconAnchor: [11, 11], html: '<div class="stopmark"></div>' }), zIndexOffset: 2000, keyboard: false }).addTo(map);
+  renderStopPanel(true);
+  drawRoutes(); refreshStops();
+  results.delete(id);
+  restartPolling(true);
+}
+function exitStop() {
+  if (mode !== 'stop') return;
+  mode = 'explore'; focusStop = null; selectedBus = null;
+  if (focusMarker) { map.removeLayer(focusMarker); focusMarker = null; }
+  clearBuses();
+  document.getElementById('stopPanel').hidden = true;
+  document.getElementById('modePill').hidden = true;
+  renderTripText();
+  drawRoutes(); refreshStops(); restartPolling(true);
+}
+function fitStop() {
+  const s = STOPS.get(focusStop); const pts = [[s.lat, s.lon]];
+  for (const b of buses.values()) if (b.info.min <= 30) pts.push(b.marker.getLatLng());
+  const wide = innerWidth > 760;
+  if (pts.length === 1) map.setView(pts[0], 15);
+  else map.fitBounds(pts, wide ? { paddingTopLeft: [420, 80], paddingBottomRight: [60, 60], maxZoom: 16 } : { paddingTopLeft: [30, 110], paddingBottomRight: [30, innerHeight * 0.55], maxZoom: 16 });
+}
+function selectArrival(busId) {
+  selectedBus = selectedBus === busId ? null : busId;
+  const b = buses.get(busId);
+  if (b && selectedBus) map.flyTo(b.marker.getLatLng(), Math.max(map.getZoom(), 15), { duration: 0.6 });
+  restyleBuses(); drawRoutes(); renderStopPanel();
+}
+function renderStopPanel(loading) {
+  const el = document.getElementById('stopPanel'); el.hidden = false;
+  const s = STOPS.get(focusStop);
+  const list = results.get(focusStop);
+  const now = Date.now();
+  let rows;
+  if (loading || !results.has(focusStop)) rows = '<div class="empty">Consultando la parada…</div>';
+  else if (!list) rows = '<div class="empty">No se pudo consultar esta parada. Lo reintento en unos segundos.</div>';
+  else if (!list.length) rows = '<div class="empty">Ningún bus previsto ahora mismo en esta parada.</div>';
+  else {
+    const withBus = new Map(); for (const b of buses.values()) withBus.set(b.info, b);
+    const items = estimateStopCache.slice().sort((a, b) => a.min - b.min);
+    rows = items.map(f => {
+      const b = [...buses.values()].find(x => x.info === (f.lapOf || f) || (f.noGps && !f.ghost && x.info.ghost && x.info.line === f.line && x.route.stopById.has(focusStop) && false));
+      const at = new Date(now + f.min * 60000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      return `<button class="arr${b && selectedBus === b.id ? ' sel' : ''}" ${b ? `data-bus="${b.id}"` : ''}>${badge(f.line)}
+        <span class="d">${f.ruta}<span>${f.noGps ? 'programado · llega a las ' + at + (f.head ? ' · sale de ' + shortName(f.head) : '') + (f.ghost ? '' : ' · aún sin GPS') : 'llega a las ' + at + ' · a ' + (f.metros / 1000).toFixed(1) + ' km'}${f.lapOf && !f.noGps ? ' · es el bus de ' + f.lapOf.min + '′ en su vuelta siguiente' : ''}</span></span>
+        <span class="m n">${f.min <= 0 ? 'Ya' : f.min + '′'}</span></button>`;
+    }).join('');
+  }
+  el.innerHTML = `<div class="head"><div><b>${s.name}</b><div class="meta">Parada ${s.id} · ${[...s.lines].sort().map(l => badge(l, true)).join('')}</div></div><button class="x" id="spClose" aria-label="Cerrar parada">✕</button></div>
+    <div class="list">${rows}</div>
+    <div class="stopacts"><button class="btn" id="spOrig">Subo aquí</button><button class="btn" id="spDest">Bajo aquí</button><button class="btn" id="spFit">Ver todos</button></div>`;
+  el.querySelector('#spClose').onclick = exitStop;
+  el.querySelector('#spFit').onclick = fitStop;
+  el.querySelector('#spOrig').onclick = () => { setTripStop('origin', focusStop); toast('Guardada como tu parada de subida'); };
+  el.querySelector('#spDest').onclick = () => { setTripStop('dest', focusStop); toast('Guardada como tu destino'); };
+  el.querySelectorAll('.arr[data-bus]').forEach(x => x.onclick = () => selectArrival(+x.dataset.bus));
+}
+let estimateStopCache = [];
+// A far-off estimate is often the same bus on its next lap: same line, same spot on the map.
+// Keep one marker for it and show both times on it.
+function mergeLaps(found) {
+  const placed = found.filter(f => f.r && !f.ghost).sort((a, b) => a.min - b.min);
+  for (const f of placed) {
+    const p = pointAt(f.r, f.along);
+    // a lap means a whole loop more to run: same spot now, but much later and much farther
+    const twin = placed.find(g => g !== f && !g.lapOf && g.line === f.line && f.min - g.min >= 15 && f.metros - g.metros >= 3000 && hav(pointAt(g.r, g.along), p) < 400);
+    if (twin) { f.lapOf = twin; (twin.laps ||= [twin.min]).push(f.min); }
+  }
+  return found.map(f => f.lapOf ? { ...f, r: null, lapOf: f.lapOf } : f);
+}
+
+// ---------- polling ----------
+function sampleStops() {
+  const lines = [...sel];
+  const every = lines.length > 12 ? 3500 : 2200;
+  const set = new Set();
+  for (const r of MAINS) if (sel.has(r.line)) { let next = every; for (const s of r.stops) if (s.d >= next) { set.add(s.id); next = s.d + every; } set.add(r.stops[r.stops.length - 1].id); }
+  return set;
+}
+let tickT, pollMs = 20000, firstStopFit = false, lastFetch = null;
+function restartPolling(now) { clearTimeout(tickT); if (now) { firstStopFit = mode === 'stop'; tick(); } else tickT = setTimeout(tick, pollMs); }
+async function tick() {
+  clearTimeout(tickT);
+  const myMode = mode, myStop = focusStop;
+  let ids;
+  if (mode === 'stop') { ids = [focusStop, prefs.origin, prefs.dest]; pollMs = STOP_POLL_MS; }
+  else { const s = sampleStops(); ids = [...s, prefs.origin, prefs.dest]; }
+  ids = [...new Set(ids)].filter(Boolean);
+  const pill = document.getElementById('tripPill');
+  try {
+    const t0 = performance.now();
+    const r = await pool(ids, 8, fetchStop);
+    // refresh as often as the network allows: never faster than 15 s, and leave the API time to breathe
+    if (mode === 'explore') pollMs = Math.round(Math.min(45000, Math.max(15000, (performance.now() - t0) * 3)));
+    lastFetch = { stops: ids.length, ms: Math.round(performance.now() - t0) };
+    if (myMode !== mode || myStop !== focusStop) return;   // mode changed while we were fetching
+    const ok = [...r.values()].filter(Boolean).length;
+    if (ok) { results = r; lastOk = Date.now(); }
+    pill.classList.toggle('err', !ok); pill.classList.remove('stale');
+    if (mode === 'stop') {
+      estimateStopCache = mergeLaps(estimateStop());
+      updateBuses(estimateStopCache, pollMs);
+      for (const b of buses.values()) b.toStop = segmentsToStop(b);
+      collectStopRouteStops(); refreshStops();
+      drawRoutes(); renderStopPanel();
+      if (firstStopFit) { firstStopFit = false; fitStop(); }
+    } else { updateBuses(estimateExplore(), pollMs); renderHero(); renderBusCard(); }
+  } catch (e) { pill.classList.add('err'); }
+  if (!document.hidden) tickT = setTimeout(tick, pollMs);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) clearTimeout(tickT); else tick(); });
+setInterval(() => { if (lastOk && Date.now() - lastOk > 90000) document.getElementById('tripPill').classList.add('stale'); }, 5000);
+addEventListener('keydown', e => { if (e.key === 'Escape') { if (!document.getElementById('editor').hidden) closeEditor(); else if (!document.getElementById('picker').hidden) document.getElementById('picker').hidden = true; else exitStop(); } });
+
+function afterTripChange() { refreshStops(); renderTripText(); if (mode === 'explore') { fitTrip(); renderHero(); } restartPolling(true); }
+
+/*TRIPBLOCK*/
+
+/*LOCATE*/
+
+/*ALERT*/
+
+// ---------- editor wiring ----------
+document.getElementById('edOriginBtn').onclick = () => openEditor('origin');
+document.getElementById('edDestBtn').onclick = () => openEditor('dest');
+function reachable(o, d) { return ROUTES.some(r => r.stopById.has(o) && r.stopById.has(d) && r.stopById.get(d).d > r.stopById.get(o).d); }
+function counterpart(id, other, asOrigin) {
+  const s = STOPS.get(id);
+  const c = [...STOPS.values()].filter(x => hav([x.lat, x.lon], [s.lat, s.lon]) < 350 && (asOrigin ? reachable(x.id, other) : reachable(other, x.id)))
+    .sort((a, b) => hav([a.lat, a.lon], [s.lat, s.lon]) - hav([b.lat, b.lon], [s.lat, s.lon]));
+  return c.length ? c[0].id : id;
+}
+document.getElementById('edSwap').onclick = () => {
+  let o = prefs.dest, d = prefs.origin;
+  if (!o || !d) { prefs.origin = o; prefs.dest = d; savePrefs(); afterTripChange(); openEditor(editing); return; }
+  if (!reachable(o, d)) { const o2 = counterpart(o, d, true); if (reachable(o2, d)) o = o2; else { const d2 = counterpart(d, o, false); if (reachable(o, d2)) d = d2; } }
+  prefs.origin = o; prefs.dest = d; savePrefs(); afterTripChange(); openEditor(editing);
+};
+document.getElementById('edNear').onclick = locate;
+document.getElementById('edClose').onclick = closeEditor;
+function clearTrip() { prefs.origin = null; prefs.dest = null; alertOn = false; savePrefs(); afterTripChange(); closeEditor(); toast('Trayecto quitado: solo el mapa'); }
+document.getElementById('tripClear').onclick = clearTrip;
+document.getElementById('edClearTop').onclick = clearTrip;
+document.getElementById('edClear').onclick = () => { prefs.origin = null; prefs.dest = null; alertOn = false; savePrefs(); afterTripChange(); closeEditor(); toast('Sin trayecto: solo el mapa'); };
+document.getElementById('editor').addEventListener('click', e => { if (e.target.id === 'editor') closeEditor(); });
+document.getElementById('edSearch').addEventListener('input', renderSearch);
+document.getElementById('edResults').addEventListener('click', e => { const b = e.target.closest('.res'); if (!b) return; setTripStop(editing, +b.dataset.id); if (editing === 'origin') openEditor('dest'); else closeEditor(); });
+
+// ---------- start ----------
+let viewStop = prefs.dest;
+renderTripText(); renderLinesPill(); drawRoutes(); refreshStops(); tick();
+</script>
+</body>
+</html>

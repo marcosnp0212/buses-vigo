@@ -1,0 +1,49 @@
+name: Actualizar horarios
+
+on:
+  schedule:
+    # Lunes 04:00 UTC = 05:00 en Vigo en invierno (06:00 en verano)
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Descargar GTFS de Vitrasa
+        run: |
+          mkdir -p gtfs-raw
+          curl -fsSL --retry 3 --retry-delay 10 -o gtfs.zip https://datos.vigo.org/data/transporte/gtfs_vigo.zip
+          unzip -o -q gtfs.zip -d gtfs-raw
+          ls -l gtfs-raw
+
+      - name: Generar datos e index.html
+        run: |
+          node tools/gtfs.js gtfs-raw
+          node tools/assemble2.js network-gtfs.json index.html
+
+      - name: Commit si ha cambiado
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "index.html sin cambios"
+            exit 0
+          fi
+          git config user.name "marcosnp0212"
+          git config user.email "286821674+marcosnp0212@users.noreply.github.com"
+          git add index.html
+          git commit -m "Actualizar horarios GTFS ($(date -u +%Y-%m-%d))"
+          git push
