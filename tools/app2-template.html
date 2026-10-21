@@ -4,10 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Buses Vigo</title>
+<!-- data first: the app can't start without it; the rest of the page doesn't wait for fonts or the vector map -->
+<link rel="preload" href="data/net.json?v=__DATAVER__" as="fetch" crossorigin>
+<link rel="preload" href="data/sched.json?v=__DATAVER__" as="fetch" crossorigin>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <style>
 /*BASECSS*/
 /* ---- network version additions ---- */
@@ -122,12 +126,21 @@
 </div>
 <div class="pill toast" id="toast" role="status"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
-<script>
-const NET = /*NET*/{};
-const SCHED = /*SCHED*/{};
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+// ---------- data (data/*.json, written by tools/assemble2.js) ----------
+const loadData = f => fetch(`data/${f}.json?v=__DATAVER__`).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); });
+let NET, SCHED;
+try { [NET, SCHED] = await Promise.all([loadData('net'), loadData('sched')]); }
+catch (e) { document.getElementById('hero').innerHTML = '<div class="empty">No se pudieron cargar las líneas. Recarga la página.</div>'; throw e; }
+function decodePolyline(s) {
+  const out = []; let i = 0, lat = 0, lon = 0;
+  const next = () => { let v = 0, sh = 0, b; do { b = s.charCodeAt(i++) - 63; v |= (b & 31) << sh; sh += 5; } while (b >= 32); return v & 1 ? ~(v >> 1) : v >> 1; };
+  while (i < s.length) { lat += next(); lon += next(); out.push([lat / 1e5, lon / 1e5]); }
+  return out;
+}
+for (const r of NET.routes) r.coords = decodePolyline(r.coords);
+SCHED.patterns = SCHED.patterns.map(([line, head, seq, dOff]) => { let m = 0; return { line, head, stops: SCHED.seqs[seq], off: dOff.map(x => m += x) }; });
 const API = 'https://datos.vigo.org/vci_api_app/api2.jsp?ttl=5&tipo=TRANSPORTE-ESTIMACION-PARADA&id=';
 const MAX_MIN = 35, MAX_WRAP_M = 6000, STOP_POLL_MS = 15000;
 
@@ -222,15 +235,31 @@ function tint(style, isDark) {
   }
   return style;
 }
+// MapLibre (~800 KB) loads after the app is up: routes, stops and buses show first, the base map fills in behind them.
+let maplibreReady = null;
+function loadMaplibre() {
+  const add = src => new Promise((ok, ko) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ko; document.head.append(s); });
+  if (!maplibreReady) {
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css'; document.head.append(css);
+    maplibreReady = add('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js').then(() => add('https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js'));
+  }
+  return maplibreReady;
+}
+const getStyle = name => styleCache[name] || (styleCache[name] = fetch('https://tiles.openfreemap.org/styles/' + name).then(r => r.json()).then(s => tint(s, name === 'dark')));
+let baseSeq = 0;
 async function setBase() {
-  const name = dark ? 'dark' : 'positron';
+  const name = dark ? 'dark' : 'positron', my = ++baseSeq;
   try {
+    const [style] = await Promise.all([getStyle(name), loadMaplibre()]);
+    if (my !== baseSeq) return;   // the theme changed meanwhile
     if (!L.maplibreGL) throw new Error('sin maplibre');
-    if (!styleCache[name]) styleCache[name] = tint(await (await fetch('https://tiles.openfreemap.org/styles/' + name)).json(), dark);
-    const layer = L.maplibreGL({ style: styleCache[name], attribution: ATTR, interactive: false });
+    // past 2x the extra pixels cost a lot of GPU on phones and are hardly visible on a map
+    const layer = L.maplibreGL({ style, attribution: ATTR, interactive: false, pixelRatio: Math.min(devicePixelRatio || 1, 2) });
     if (baseLayer) map.removeLayer(baseLayer);
     baseLayer = layer.addTo(map);
   } catch (e) {
+    if (my !== baseSeq) return;
+    delete styleCache[name];
     const b = dark ? 'World_Dark_Gray' : 'World_Light_Gray';
     if (baseLayer) map.removeLayer(baseLayer);
     baseLayer = L.layerGroup([
@@ -254,34 +283,59 @@ function renderThemeBtn() {
   b.setAttribute('aria-label', label); b.title = label;
 }
 sysDark.addEventListener('change', () => { if (!prefs.theme || prefs.theme === 'auto') applyTheme(); });
-const canvas = L.canvas({ padding: 0.3, tolerance: 6 });
+const canvas = L.canvas({ padding: 0.2, tolerance: 6 });
 const routeLayer = L.layerGroup().addTo(map);
+const segLayer = L.layerGroup().addTo(map);
 const stopLayer = L.layerGroup().addTo(map);
 
 let mode = 'explore', focusStop = null, selectedBus = null;
 
+// Redrawing every line on the canvas is the expensive part, so only rebuild what changed:
+// the full routes when their set, width or theme change; the stretches to the stop are updated in place.
+let routeKey = '';
+const segLines = new Map();   // bus id -> [{ casing, line }] for each stretch to the stop
 function drawRoutes() {
-  routeLayer.clearLayers();
   const casing = dark ? '#171a1e' : '#ffffff';
+  const line = (pts, o) => L.polyline(pts, { ...o, interactive: false, renderer: canvas });
+  let list, key;
   if (mode === 'explore') {
     const many = sel.size > 8, w = many ? (map.getZoom() >= 15 ? 3 : 2) : 3.5;
-    for (const r of MAINS) if (sel.has(r.line)) {
-      if (!many) L.polyline(r.coords, { color: casing, weight: 7, opacity: 0.6, interactive: false, renderer: canvas }).addTo(routeLayer);
-      L.polyline(r.coords, { color: r.color, weight: w, opacity: many ? 0.55 : 0.85, interactive: false, renderer: canvas }).addTo(routeLayer);
+    list = MAINS.filter(r => sel.has(r.line)); key = ['e', dark, w, list.map(r => r.id)].join('|');
+    if (key !== routeKey) {
+      routeLayer.clearLayers();
+      for (const r of list) {
+        if (!many) line(r.coords, { color: casing, weight: 7, opacity: 0.6 }).addTo(routeLayer);
+        line(r.coords, { color: r.color, weight: w, opacity: many ? 0.55 : 0.85 }).addTo(routeLayer);
+      }
     }
   } else {
     // stop mode: every route that serves this stop, faint; the stretch each bus still has to run until the stop, bold
     const shown = new Set();
     for (const b of buses.values()) shown.add(b.route);
     for (const r of STOPS.get(focusStop).routes) if (r.main) shown.add(r);
-    for (const r of shown) L.polyline(r.coords, { color: r.color, weight: 3, opacity: 0.22, interactive: false, renderer: canvas }).addTo(routeLayer);
-    for (const b of buses.values()) {
-      const segs = b.toStop || [];
-      for (const s of segs) {
-        if (!b.info.ghost) L.polyline(s, { color: casing, weight: 9, opacity: 0.7, interactive: false, renderer: canvas }).addTo(routeLayer);
-        L.polyline(s, { color: b.route.color, weight: selectedBus === b.id ? 7 : 5, opacity: 1, dashArray: b.info.ghost ? '6 8' : null, interactive: false, renderer: canvas }).addTo(routeLayer);
+    list = [...shown]; key = ['s', dark, list.map(r => r.id).sort()].join('|');
+    if (key !== routeKey) { routeLayer.clearLayers(); for (const r of list) line(r.coords, { color: r.color, weight: 3, opacity: 0.22 }).addTo(routeLayer); }
+  }
+  // keep the full routes under the stops and the stretches to the stop
+  if (key !== routeKey) { routeKey = key; routeLayer.getLayers().reverse().forEach(l => l.bringToBack()); }
+  const live = new Set(mode === 'stop' ? buses.keys() : []);
+  for (const [id, segs] of segLines) if (!live.has(id)) { for (const s of segs) { segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); } segLines.delete(id); }
+  for (const id of live) {
+    const b = buses.get(id), want = b.toStop || [], have = segLines.get(id) || [];
+    const ghost = !!b.info.ghost, style = { color: b.route.color, weight: selectedBus === id ? 7 : 5, opacity: 1, dashArray: ghost ? '6 8' : null };
+    while (have.length > want.length) { const s = have.pop(); segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); }
+    want.forEach((pts, i) => {
+      let s = have[i];
+      if (s && s.ghost !== ghost) { segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); s = null; }
+      if (!s) {
+        s = have[i] = { ghost, casing: ghost ? null : line(pts, { color: casing, weight: 9, opacity: 0.7 }).addTo(segLayer), line: line(pts, style).addTo(segLayer), weight: style.weight, color: casing };
+        return;
       }
-    }
+      if (s.casing) { s.casing.setLatLngs(pts); if (s.color !== casing) { s.casing.setStyle({ color: casing }); s.color = casing; } }
+      s.line.setLatLngs(pts);
+      if (s.weight !== style.weight) { s.line.setStyle({ weight: style.weight }); s.weight = style.weight; }
+    });
+    segLines.set(id, have);
   }
 }
 
@@ -383,9 +437,9 @@ async function fetchStop(id) {
   const ALIAS = { TUR: 'TURISTICO' };
   return (JSON.parse(txt).estimaciones || []).map(e => { const l = String(e.linea).trim(); return { ...e, linea: ALIAS[l] || l, ruta: niceRuta(e.ruta) }; });
 }
-async function pool(items, n, fn) {
+async function pool(items, n, fn, onPart) {
   const out = new Map(); let i = 0;
-  await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const id = items[i++]; try { out.set(id, await fn(id)); } catch { out.set(id, null); } } }));
+  await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const id = items[i++]; try { out.set(id, await fn(id)); } catch { out.set(id, null); } if (onPart) onPart(out); } }));
   return out;
 }
 let results = new Map(), lastOk = 0;
@@ -477,6 +531,16 @@ function busIcon(b) {
   return L.divIcon({ className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
     html: `<div class="busm${mine ? ' mine' : ''}" style="background:${r.color};color:${fg};font-size:${fs}px;width:${size}px;height:${size}px;border-width:${size < 24 ? 2 : 3}px">${label}</div>` });
 }
+// Each bus marker is its own DOM layer, so: rebuild its icon only when it looks different,
+// keep off-screen buses off the map, and only move a marker when it moves at least half a pixel.
+function setBusIcon(b) { const ic = busIcon(b); if (ic.options.html !== b.iconHtml) { b.iconHtml = ic.options.html; b.marker.setIcon(ic); } }
+let viewBounds = null;
+function placeBus(b, ll) {
+  if (ll) b.marker.setLatLng(ll); else ll = b.marker.getLatLng();
+  const inView = follow === b.id || selectedBus === b.id || viewBounds.contains(ll);
+  if (inView && !b.onMap) { b.marker.addTo(map); b.onMap = true; b.px = null; }
+  else if (!inView && b.onMap) { map.removeLayer(b.marker); b.onMap = false; }
+}
 function clearBuses() { for (const b of buses.values()) map.removeLayer(b.marker); buses.clear(); follow = null; selectedBus = null; }
 function updateBuses(found, pollMs) {
   const seen = new Set();
@@ -490,19 +554,19 @@ function updateBuses(found, pollMs) {
       const target = f.along + speed * pollMs / 1000;
       if (target - best.shown > 3000) best.shown = f.along;
       if (!stale) best.v = Math.min(Math.max((target - best.shown) / (pollMs / 1000), 0), 20); else if (best.v === 0) best.v = speed * 0.7;
-      best.fix = f.along; best.info = f; seen.add(best.id); best.marker.setIcon(busIcon(best));
+      best.fix = f.along; best.info = f; seen.add(best.id); setBusIcon(best);
     } else {
-      const b = { id: nextId++, route: f.r, fix: f.along, shown: f.along, v: speed, info: f };
+      const b = { id: nextId++, route: f.r, fix: f.along, shown: f.along, v: speed, info: f, onMap: false };
       b.marker = L.marker(pointAt(f.r, f.along), { icon: null, zIndexOffset: 1000, keyboard: false });
-      b.marker.setIcon(busIcon(b)); b.marker.addTo(map);
+      setBusIcon(b); viewBounds = viewBounds || map.getBounds().pad(0.15); placeBus(b);
       b.marker.on('click', () => { if (mode === 'stop') selectArrival(b.id); else showBusCard(b); });
+      if (mode === 'explore') b.marker.bindTooltip(() => `<b>${b.route.line}</b> → ${b.info.ruta}`, { direction: 'top', offset: [0, -14] });
       buses.set(b.id, b); seen.add(b.id);
     }
   }
   for (const [id, b] of buses) if (!seen.has(id)) { map.removeLayer(b.marker); buses.delete(id); if (follow === id) follow = null; if (busCardId === id) busCardId = null; if (selectedBus === id) selectedBus = null; }
-  if (mode === 'explore') for (const b of buses.values()) b.marker.bindTooltip(`<b>${b.route.line}</b> → ${b.info.ruta}`, { direction: 'top', offset: [0, -14] });
 }
-function restyleBuses() { for (const b of buses.values()) b.marker.setIcon(busIcon(b)); }
+function restyleBuses() { for (const b of buses.values()) setBusIcon(b); }
 function segmentsToStop(b) { // stretch from the bus to the focused stop (possibly across the end of the other direction)
   const base = b.info.base || b.route, sd = base.stopById.get(focusStop).d, chain = b.info.chain || [base];
   if (chain.length === 1) return [slice(base, b.shown, sd)];
@@ -510,14 +574,26 @@ function segmentsToStop(b) { // stretch from the bus to the focused stop (possib
 }
 let lastFrame = performance.now(), lastSeg = 0;
 setInterval(() => {
+  if (document.hidden) return;
   const now = performance.now(), dt = Math.min((now - lastFrame) / 1000, 30); lastFrame = now;
+  viewBounds = map.getBounds().pad(0.15);
   for (const b of buses.values()) {
     const cap = mode === 'stop' && b.info.base === b.route && (b.info.chain || []).length <= 1 ? b.route.stopById.get(focusStop).d : b.route.length;
     b.shown = Math.max(b.shown, Math.min(b.shown + b.v * dt, b.fix + 1500, cap));
-    b.marker.setLatLng(pointAt(b.route, b.shown));
+    const ll = L.latLng(pointAt(b.route, b.shown));
+    if (b.onMap) {
+      const p = map.latLngToLayerPoint(ll), q = b.px;
+      if (q && Math.abs(p.x - q.x) < 0.5 && Math.abs(p.y - q.y) < 0.5) { b.marker._latlng = ll; continue; }
+      b.px = p;
+    }
+    placeBus(b, ll);
   }
   if (mode === 'stop' && now - lastSeg > 1000) { lastSeg = now; for (const b of buses.values()) b.toStop = segmentsToStop(b); drawRoutes(); }
-  if (follow && buses.has(follow)) map.panTo(buses.get(follow).marker.getLatLng(), { animate: true, duration: 0.5, noMoveStart: true });
+  // panning every tick, even by zero pixels, fires moveend and redraws the whole map; only pan when the bus has moved
+  if (follow && buses.has(follow)) {
+    const p = map.latLngToContainerPoint(buses.get(follow).marker.getLatLng()), c = map.getSize().divideBy(2);
+    if (Math.abs(p.x - c.x) >= 1 || Math.abs(p.y - c.y) >= 1) map.panTo(buses.get(follow).marker.getLatLng(), { animate: true, duration: 0.5, noMoveStart: true });
+  }
 }, 100);
 map.on('dragstart', () => { if (follow) { follow = null; if (mode === 'explore') { renderHero(); restyleBuses(); } } });
 
@@ -576,7 +652,7 @@ function renderStopPanel(loading) {
     const items = estimateStopCache.slice().sort((a, b) => a.min - b.min);
     rows = items.map(f => {
       const b = [...buses.values()].find(x => x.info === (f.lapOf || f) || (f.noGps && !f.ghost && x.info.ghost && x.info.line === f.line && x.route.stopById.has(focusStop) && false));
-      const at = new Date(now + f.min * 60000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      const at = hhmm(new Date(now + f.min * 60000));
       return `<button class="arr${b && selectedBus === b.id ? ' sel' : ''}" ${b ? `data-bus="${b.id}"` : ''}>${badge(f.line)}
         <span class="d">${f.ruta}<span>${f.noGps ? 'programado · llega a las ' + at + (f.head ? ' · sale de ' + shortName(f.head) : '') + (f.ghost ? '' : ' · aún sin GPS') : 'llega a las ' + at + ' · a ' + (f.metros / 1000).toFixed(1) + ' km'}${f.lapOf && !f.noGps ? ' · es el bus de ' + f.lapOf.min + '′ en su vuelta siguiente' : ''}</span></span>
         <span class="m n">${f.min <= 0 ? 'Ya' : f.min + '′'}</span></button>`;
@@ -620,12 +696,19 @@ async function tick() {
   const myMode = mode, myStop = focusStop;
   let ids;
   if (mode === 'stop') { ids = [focusStop, prefs.origin, prefs.dest]; pollMs = STOP_POLL_MS; }
-  else { const s = sampleStops(); ids = [...s, prefs.origin, prefs.dest]; }
+  else { const s = sampleStops(); ids = [prefs.origin, prefs.dest, ...s]; }
   ids = [...new Set(ids)].filter(Boolean);
   const pill = document.getElementById('tripPill');
+  // a full round is a couple hundred requests: with nothing on the map yet, show buses as the answers come in
+  let lastPart = performance.now();
+  const onPart = mode === 'explore' && !buses.size ? part => {
+    const t = performance.now(); if (t - lastPart < 700 || myMode !== mode) return; lastPart = t;
+    results = new Map(part); updateBuses(estimateExplore(), pollMs);
+    if (!hasTrip() || results.has(prefs.origin)) renderHero();
+  } : null;
   try {
     const t0 = performance.now();
-    const r = await pool(ids, 8, fetchStop);
+    const r = await pool(ids, 8, fetchStop, onPart);
     // refresh as often as the network allows: never faster than 15 s, and leave the API time to breathe
     if (mode === 'explore') pollMs = Math.round(Math.min(45000, Math.max(15000, (performance.now() - t0) * 3)));
     lastFetch = { stops: ids.length, ms: Math.round(performance.now() - t0) };
