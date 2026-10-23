@@ -30,3 +30,12 @@ de al menos 24 px, nombres para lectores de pantalla) y que no se tapen los buse
 ```
 cd tests && npm install && npm test        # capturas en tests/out/
 ```
+
+## Comprobar con las cámaras de tráfico
+
+`comprobar.html` (enlazada desde «Acerca de») compara la posición que calcula la app con lo que ve una de las
+[61 cámaras públicas del Concello](https://datos-ckan.vigo.org/dataset/groups/t-camaras) (60 están sobre recorridos
+de Vitrasa). Cuando la app dice que un bus pasa por delante, respondes si lo ves y la página lleva la cuenta de aciertos.
+Las imágenes del Concello solo se sirven a conexiones desde España y sin https: se ven desde el móvil o el PC en Vigo
+(si el navegador no las muestra dentro de la página, se abren en otra pestaña). `tools/camaras.py` hace el estudio de
+cobertura (cámaras, líneas que ve cada una y cámaras de la DGT alrededor de Vigo).
