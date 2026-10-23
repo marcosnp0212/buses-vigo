@@ -80,7 +80,13 @@ async function drag(page, x, y, dx, dy) {
   for (let i = 1; i <= steps; i++) { await s.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * i / steps, y: y + dy * i / steps }] }); await page.waitForTimeout(16); }
   await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await pause(page, 900);
 }
-async function doubleTap(page, x, y) { await page.touchscreen.tap(x, y); await page.waitForTimeout(120); await page.touchscreen.tap(x, y); await pause(page, 1200); }
+// achegar co xesto de pinza: dous dedos que se separan
+async function pinch(page, x, y, from = 30, to = 110) {
+  const s = await page.context().newCDPSession(page), steps = 12, pts = d => [{ x: x - d, y, id: 1 }, { x: x + d, y, id: 2 }];
+  await s.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pts(from) });
+  for (let i = 1; i <= steps; i++) { await s.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pts(from + (to - from) * i / steps) }); await page.waitForTimeout(16); }
+  await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await pause(page, 1500);
+}
 // cantas cores de liña (non fondo) hai debuxadas no mapa nunha zona
 async function inkOnMap(page) {
   return page.evaluate(() => { let n = 0; for (const c of document.querySelectorAll('.leaflet-overlay-pane canvas')) { const x = c.getContext('2d'), d = x.getImageData(0, 0, c.width, c.height).data; for (let i = 0; i < d.length; i += 16) if (d[i + 3] > 200 && Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 60) n++; } return n; });
@@ -160,9 +166,12 @@ async function newPhone(browser, { dark = false, desktop = false, state } = {}) 
   await page.touchscreen.tap(60, 420); await pause(page, 800);
   check('5. tocar o mapa pecha a ficha', !(await page.locator('#busCard').isVisible()));
 
-  // 6. Arrasta o mapa co dedo e achégase con dobre toque
+  // 6. Arrasta o mapa co dedo e achégase coa pinza
   await drag(page, 200, 500, -80, -120);
-  await doubleTap(page, 200, 420);
+  const z0 = await page.evaluate(() => document.querySelector('.leaflet-proxy') && getComputedStyle(document.querySelector('.leaflet-proxy')).transform);
+  await pinch(page, 195, 420);
+  const z1 = await page.evaluate(() => document.querySelector('.leaflet-proxy') && getComputedStyle(document.querySelector('.leaflet-proxy')).transform);
+  check('6. a pinza achega o mapa', z0 !== z1);
   check('6. arrastrar e achegar sen erros', errors.length === 0, errors.join('; '));
   await screenCheck(page, '6. mapa achegado', '06-achegado');
 
