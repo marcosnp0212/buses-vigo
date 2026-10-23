@@ -117,6 +117,7 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 .fav + .fav { border-top: 2px solid var(--rule); padding-top: 14px; }
 .fav .none { font-size: 14px; color: var(--muted); padding: 4px 0 2px 34px; }
 .fav .btn.link { align-self: flex-start; padding: 0; }
+.down { font-size: 14px; color: var(--late); border: 2px solid currentColor; border-radius: 14px; padding: 8px 12px; }
 .add { display: flex; align-items: center; justify-content: center; gap: 8px; border: 2.5px dashed var(--rule); background: none; border-radius: 24px; padding: 12px; font-weight: 500; color: var(--muted); }
 .add:hover { color: var(--ink); border-color: var(--muted); }
 
@@ -405,6 +406,17 @@ function hav(a, b) {
   const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * t) * Math.cos(b[0] * t) * Math.sin(dLon / 2) ** 2;
   return 2 * 6371000 * Math.asin(Math.sqrt(s));
 }
+// Vitrasa's colours, with the same hue but strong enough to tell lines apart side by side (several are very pale)
+function vivid(hex) {
+  let r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h = 0, sat = 0, l = (mx + mn) / 2;
+  if (mx !== mn) { const d = mx - mn; sat = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6; }
+  if (sat > 0.08) sat = Math.max(sat, 0.5);   // greys stay grey
+  l = Math.min(l, sat > 0.08 ? 0.6 : 0.48);
+  const q = l < 0.5 ? l * (1 + sat) : l + sat - l * sat, p2 = 2 * l - q, f = t => { t = (t + 1) % 1; return t < 1 / 6 ? p2 + (q - p2) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p2 + (q - p2) * (2 / 3 - t) * 6 : p2; };
+  return '#' + [f(h + 1 / 3), f(h), f(h - 1 / 3)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+}
+for (const l of NET.lines) l.color = vivid(l.color);
 const LINE = {}; for (const l of NET.lines) LINE[l.code] = l;
 const LINE_COLORS = {}; for (const l of NET.lines) LINE_COLORS[l.code] = l.color;
 const ROUTES = NET.routes.filter(r => LINE[r.line]);
@@ -530,59 +542,130 @@ let mode = 'explore', focusStop = null, selectedBus = null;
 // Redrawing every line on the canvas is the expensive part, so only rebuild what changed:
 // the full routes when their set, width or theme change; the stretches to the stop are updated in place.
 let routeKey = '';
-const segLines = new Map();   // bus id -> [{ casing, line }] for each stretch to the stop
-// A polyline drawn a few pixels to one side: lines sharing a street run next to each other, as on a metro map.
+const segLines = new Map();   // bus id -> [{ line, ghost, weight }] for each stretch to the stop
+// ---------- bundles: lines sharing a street run side by side, each in its own lane, as on a metro map ----------
+// Every few metres of each line shown, look for the other lines running along the same street (close and parallel).
+// The line takes its lane among them, counted from the side of the first line of that bundle, so two lines going
+// opposite ways also end up next to each other and not on top. Lanes change gently where the bundle changes.
+const MX = Math.cos(42.22 * Math.PI / 180) * 111320, MY = 110540, BUNDLE_PX = 30;
+const lineWidthAt = z => z >= 15 ? 6 : z >= 13 ? 4.5 : 3;
+const lineWidth = () => lineWidthAt(map.getZoom());
+const bundleCache = new Map();
+function computeBundles(routes, z) {
+  const key = z + '|' + routes.map(r => r.id).join(',');
+  if (!bundleCache.has(key)) bundleCache.set(key, new Map(buildBundles(routes, z)));
+  for (const r of routes) r.bundle = bundleCache.get(key).get(r);
+}
+function buildBundles(routes, z) {
+  const mpp = 156543 * Math.cos(42.22 * Math.PI / 180) / 2 ** z;
+  const tol = Math.max(14, lineWidthAt(z) * 1.6 * mpp), step = Math.min(60, Math.max(20, mpp * 4)), cell = tol * 1.5;
+  const rank = c => LINES.indexOf(c);
+  const D = routes.map(r => {
+    const ll = [], d = [];
+    for (let i = 0; i < r.coords.length; i++) {
+      if (i) { const a = r.coords[i - 1], b = r.coords[i], len = r.cum[i] - r.cum[i - 1], n = Math.floor(len / step);
+        for (let k = 1; k < n; k++) { const f = k / n; ll.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]); d.push(r.cum[i - 1] + len * f); } }
+      ll.push(r.coords[i]); d.push(r.cum[i]);
+    }
+    return { r, ll, d, xy: ll.map(([la, lo]) => [lo * MX, la * MY]) };
+  });
+  const grid = new Map(), add = (k, v) => { let c = grid.get(k); if (!c) grid.set(k, c = []); c.push(v); };
+  D.forEach((o, ri) => { for (let i = 1; i < o.xy.length; i++) {
+    const [x1, y1] = o.xy[i - 1], [x2, y2] = o.xy[i];
+    for (let gx = Math.floor(Math.min(x1, x2) / cell); gx <= Math.floor(Math.max(x1, x2) / cell); gx++)
+      for (let gy = Math.floor(Math.min(y1, y2) / cell); gy <= Math.floor(Math.max(y1, y2) / cell); gy++) add(gx + ',' + gy, [ri, i]);
+  } });
+  const unit = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], n = Math.hypot(dx, dy) || 1; return [dx / n, dy / n]; };
+  return D.map(o => {
+    const c = o.r.line, N = o.xy.length, slots = new Float32Array(N), ns = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const p = o.xy[i], t = unit(o.xy[Math.max(0, i - 1)], o.xy[Math.min(N - 1, i + 1)]), found = new Map();
+      const gx = Math.floor(p[0] / cell), gy = Math.floor(p[1] / cell);
+      for (let ax = gx - 1; ax <= gx + 1; ax++) for (let ay = gy - 1; ay <= gy + 1; ay++) for (const [rj, sj] of grid.get(ax + ',' + ay) || []) {
+        const q = D[rj]; if (q.r.line === c || found.has(q.r.line)) continue;
+        const a = q.xy[sj - 1], b = q.xy[sj], u = unit(a, b);
+        if (Math.abs(t[0] * u[0] + t[1] * u[1]) < 0.85) continue;   // crossing, not running along
+        const L2 = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2 || 1, f = Math.max(0, Math.min(1, ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / L2));
+        if (Math.hypot(p[0] - a[0] - f * (b[0] - a[0]), p[1] - a[1] - f * (b[1] - a[1])) <= tol) found.set(q.r.line, u);
+      }
+      const codes = [c, ...found.keys()].sort((a, b) => rank(a) - rank(b)), first = codes[0], ref = first === c ? t : found.get(first);
+      slots[i] = (codes.indexOf(c) - (codes.length - 1) / 2) * (t[0] * ref[0] + t[1] * ref[1] >= 0 ? 1 : -1);
+      ns[i] = codes.length;
+    }
+    // ease the lane changes over ~80 m
+    const k = Math.max(1, Math.round(80 / step)), sm = a => a.map((_, i) => { let sum = 0, n = 0; for (let j = Math.max(0, i - k); j <= Math.min(N - 1, i + k); j++) { sum += a[j]; n++; } return sum / n; });
+    return [o.r, { ll: o.ll, d: o.d, slots: sm(Array.from(slots)), ns: sm(Array.from(ns)) }];
+  });
+}
+// A polyline drawn in its lane: each point moved sideways by its slot.
 const OffsetLine = L.Polyline.extend({
   _project() {
     L.Polyline.prototype._project.call(this);
-    const o = this.options.offset; if (!o) return;
+    const s = this.options.slots; if (!s) return;
+    const g = this.options.gap, ns = this.options.ns;
     this._rings = this._rings.map(r => r.map((p, i) => {
+      const o = (s[i] || 0) * Math.min(g, BUNDLE_PX / Math.max(1, ns[i] || 1)); if (!o) return p;
       const a = r[Math.max(0, i - 1)], b = r[Math.min(r.length - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, n = Math.hypot(dx, dy) || 1;
       return L.point(p.x - dy / n * o, p.y + dx / n * o);
     }));
   },
 });
-let lineOffset = {};   // line code -> pixels to the side
-const lineWidth = () => { const z = map.getZoom(); return z >= 15 ? 6 : z >= 13 ? 4.5 : 3; };
+// the bundled points of a route between two distances along it
+function bundleSlice(r, d0, d1) {
+  d0 = Math.max(0, d0); d1 = Math.min(r.length, d1); if (d1 <= d0) return { ll: [] };
+  const B = r.bundle; if (!B) return { ll: slice(r, d0, d1) };
+  const at = d => { let lo = 0, hi = B.d.length - 1; while (lo < hi - 1) { const m = (lo + hi) >> 1; if (B.d[m] <= d) lo = m; else hi = m; }
+    const f = (d - B.d[lo]) / ((B.d[hi] - B.d[lo]) || 1), mix = (a, b) => a + (b - a) * f;
+    return [[mix(B.ll[lo][0], B.ll[hi][0]), mix(B.ll[lo][1], B.ll[hi][1])], mix(B.slots[lo], B.slots[hi]), mix(B.ns[lo], B.ns[hi])]; };
+  const out = { ll: [], slots: [], ns: [] }, push = ([p, s, n]) => { out.ll.push(p); out.slots.push(s); out.ns.push(n); };
+  push(at(d0)); for (let i = 0; i < B.d.length; i++) if (B.d[i] > d0 && B.d[i] < d1) push([B.ll[i], B.slots[i], B.ns[i]]); push(at(d1));
+  return out;
+}
+// where a bus is drawn: on its line's lane, not in the middle of the street
+function laneLatLng(r, d, ll) {
+  if (!r.bundle) return ll;
+  const one = bundleSlice(r, d, d + 1), slot = one.slots ? one.slots[0] : 0, n = one.ns ? one.ns[0] : 1; if (!slot) return ll;
+  const p = map.latLngToLayerPoint(ll), a = map.latLngToLayerPoint(pointAt(r, Math.max(0, d - 15))), b = map.latLngToLayerPoint(pointAt(r, Math.min(r.length, d + 15)));
+  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, o = slot * Math.min(lineWidth() + 1, BUNDLE_PX / Math.max(1, n));
+  return map.layerPointToLatLng(L.point(p.x - dy / len * o, p.y + dx / len * o));
+}
 function drawRoutes() {
-  const casing = dark ? '#1f2830' : '#f2efe8';
-  const line = (pts, o) => new OffsetLine(pts, { ...o, interactive: false, renderer: canvas, lineJoin: 'round', lineCap: 'round', smoothFactor: 1.5 });
-  // side by side only while there are few lines: with dozens it would just smear them
-  const spread = codes => { const w = lineWidth(), gap = w + 1; lineOffset = {}; if (codes.length <= 10) codes.forEach((c, i) => { lineOffset[c] = (i - (codes.length - 1) / 2) * gap; }); };
+  const z = map.getZoom(), w = lineWidth();
+  const line = (pts, o) => new OffsetLine(pts.ll, { ...o, slots: pts.slots, ns: pts.ns, gap: o.weight + 0.8, interactive: false, renderer: canvas, lineJoin: 'round', lineCap: 'round', smoothFactor: 1 });
+  const whole = r => r.bundle ? r.bundle : { ll: r.coords };
   let list, key;
   if (mode === 'explore') {
-    list = MAINS.filter(r => sel.has(r.line)); const codes = [...new Set(list.map(r => r.line))], many = codes.length > 10, w = many ? lineWidth() * 0.75 : lineWidth();
-    key = ['e', dark, w, list.map(r => r.id)].join('|');
+    // with dozens of lines, lanes would turn every main street into a 40-px band: then they are just drawn thinner
+    list = MAINS.filter(r => sel.has(r.line)); const many = list.length > 30, codes = new Set(list.map(r => r.line)).size;
+    // the more lines share the streets, the thinner each one, so a bundle stays narrow and every line visible in it
+    const lw = many ? w * 0.6 : codes <= 6 ? w : Math.max(2.5, w * 0.6);
+    key = ['e', dark, z, list.map(r => r.id)].join('|');
     if (key !== routeKey) {
-      spread(codes); routeLayer.clearLayers();
-      for (const r of list) line(r.coords, { color: r.color, weight: w, opacity: 1, offset: lineOffset[r.line] || 0 }).addTo(routeLayer);
+      if (many) for (const r of list) r.bundle = null; else computeBundles(list, z);
+      routeLayer.clearLayers();
+      for (const r of list) line(whole(r), { color: r.color, weight: lw, opacity: 1 }).addTo(routeLayer);
     }
   } else {
-    // stop mode: only the lines that serve this stop, soft; the stretch each bus still has to run until the stop, solid
+    // stop mode: only the lines that serve this stop, thin; the stretch each bus still has to run until the stop, thick in its lane
     const shown = new Set();
-    for (const b of buses.values()) shown.add(b.route);
+    for (const b of buses.values()) for (const r of (b.info.chain || [b.route])) shown.add(r);
     for (const r of STOPS.get(focusStop).routes) if (r.main) shown.add(r);
-    list = [...shown]; key = ['s', dark, lineWidth(), list.map(r => r.id).sort()].join('|');
-    if (key !== routeKey) { spread([...new Set(list.map(r => r.line))]); routeLayer.clearLayers(); for (const r of list) line(r.coords, { color: r.color, weight: 2.5, opacity: 0.35 }).addTo(routeLayer); }
+    list = [...shown].sort((a, b) => a.id < b.id ? -1 : 1); key = ['s', dark, z, list.map(r => r.id)].join('|');
+    if (key !== routeKey) { computeBundles(list, z); routeLayer.clearLayers(); for (const r of list) line(whole(r), { color: r.color, weight: 2.5, opacity: 0.35 }).addTo(routeLayer); }
   }
   // keep the full routes under the stops and the stretches to the stop
   if (key !== routeKey) { routeKey = key; routeLayer.getLayers().reverse().forEach(l => l.bringToBack()); }
   const live = new Set(mode === 'stop' ? buses.keys() : []);
-  for (const [id, segs] of segLines) if (!live.has(id)) { for (const s of segs) { segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); } segLines.delete(id); }
+  for (const [id, segs] of segLines) if (!live.has(id)) { for (const s of segs) segLayer.removeLayer(s.line); segLines.delete(id); }
   for (const id of live) {
-    const b = buses.get(id), want = b.toStop || [], have = segLines.get(id) || [];
-    const ghost = !!b.info.ghost, style = { color: b.route.color, weight: lineWidth() + (selectedBus === id ? 2 : 0), opacity: 1, dashArray: ghost ? '2 10' : null, offset: lineOffset[b.route.line] || 0 };
-    while (have.length > want.length) { const s = have.pop(); segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); }
+    const b = buses.get(id), want = (b.toStop || []).map(([r, d0, d1]) => bundleSlice(r, d0, d1)), have = segLines.get(id) || [];
+    const ghost = !!b.info.ghost, style = { color: b.route.color, weight: w + (selectedBus === id ? 2 : 0), opacity: 1, dashArray: ghost ? '2 10' : null };
+    while (have.length > want.length) segLayer.removeLayer(have.pop().line);
     want.forEach((pts, i) => {
       let s = have[i];
-      if (s && s.ghost !== ghost) { segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); s = null; }
-      if (!s) {
-        s = have[i] = { ghost, casing: null, line: line(pts, style).addTo(segLayer), weight: style.weight, color: casing };
-        return;
-      }
-      if (s.casing) { s.casing.setLatLngs(pts); if (s.color !== casing) { s.casing.setStyle({ color: casing }); s.color = casing; } }
-      s.line.setLatLngs(pts);
-      if (s.weight !== style.weight) { s.line.setStyle({ weight: style.weight, offset: style.offset }); s.weight = style.weight; }
+      if (s && (s.ghost !== ghost || s.weight !== style.weight)) { segLayer.removeLayer(s.line); s = null; }
+      if (!s) { have[i] = { ghost, weight: style.weight, line: line(pts, style).addTo(segLayer) }; return; }
+      Object.assign(s.line.options, { slots: pts.slots, ns: pts.ns }); s.line.setLatLngs(pts.ll);
     });
     segLines.set(id, have);
   }
@@ -891,10 +974,10 @@ function updateBuses(found, pollMs) {
   for (const [id, b] of buses) if (!seen.has(id)) { dropBus(b); buses.delete(id); if (follow === id) follow = null; if (busCardId === id) busCardId = null; if (selectedBus === id) selectedBus = null; }
 }
 function restyleBuses() { for (const b of buses.values()) setBusIcon(b); }
-function segmentsToStop(b) { // stretch from the bus to the focused stop (possibly across the end of the other direction)
+function segmentsToStop(b) { // stretch from the bus to the focused stop (possibly across the end of the other direction), as [route, from, to]
   const base = b.info.base || b.route, sd = base.stopById.get(focusStop).d, chain = b.info.chain || [base];
-  if (chain.length === 1) return [slice(base, b.shown, sd)];
-  return chain.map((r, i) => i === 0 ? slice(r, b.shown, r.length) : i === chain.length - 1 ? slice(r, 0, sd) : r.coords);
+  if (chain.length === 1) return [[base, b.shown, sd]];
+  return chain.map((r, i) => i === 0 ? [r, b.shown, r.length] : i === chain.length - 1 ? [r, 0, sd] : [r, 0, r.length]);
 }
 let lastFrame = performance.now(), lastSeg = 0;
 setInterval(() => {
@@ -904,7 +987,7 @@ setInterval(() => {
   for (const b of buses.values()) {
     const cap = mode === 'stop' && b.info.base === b.route && (b.info.chain || []).length <= 1 ? b.route.stopById.get(focusStop).d : b.route.length;
     b.shown = Math.max(b.shown, Math.min(b.shown + b.v * dt, b.fix + 1500, cap));
-    const ll = L.latLng(pointAt(b.route, b.shown));
+    const ll = L.latLng(laneLatLng(b.route, b.shown, L.latLng(pointAt(b.route, b.shown))));
     if (b.onMap || b.dotOn) {
       const p = map.latLngToLayerPoint(ll), q = b.px;
       if (q && Math.abs(p.x - q.x) < 0.5 && Math.abs(p.y - q.y) < 0.5) { b.marker._latlng = ll; continue; }
@@ -987,7 +1070,10 @@ function renderStopPanel(loading) {
   const now = Date.now();
   let rows;
   if (loading || !results.has(focusStop)) rows = `<div class="empty">Consultando a parada…</div>`;
-  else if (!list) rows = `<div class="empty">Esta parada non responde agora. Volvo tentalo nuns segundos.</div>`;
+  else if (!list) {
+    const sch = departures(focusStop) || [];
+    rows = `<div class="down">Sen datos en directo: horario oficial.</div>` + (sch.length ? sch.map(d => `<div class="arr"><span class="ah">${badge(d.line)}<span class="d"><b>${d.ruta}</b><span>Segundo o horario, ás ${hhmm(new Date(now + d.mins[0] * 60000))}</span></span>${whenHtml(d.mins, false)}</span></div>`).join('') : `<div class="empty">Ningún bus no horario na próxima hora e media.</div>`);
+  }
   else if (!list.length) rows = `<div class="empty">Ningún bus previsto agora mesmo nesta parada.</div>`;
   else {
     const items = estimateStopCache.slice().sort((a, b) => a.min - b.min);
@@ -1060,8 +1146,8 @@ async function tick() {
     lastFetch = { stops: ids.length, ms: Math.round(performance.now() - t0) };
     if (myMode !== mode || myStop !== focusStop) return;   // mode changed while we were fetching
     const ok = [...r.values()].filter(Boolean).length;
-    if (ok) { results = r; lastOk = Date.now(); }
-    lastErr = !ok; renderFresh();
+    results = r; if (ok) lastOk = Date.now();   // nothing answered: no stale minutes, the home falls back to the timetable
+    if (lastErr !== !ok) { lastErr = !ok; renderHome(); } renderFresh();
     if (mode === 'stop') {
       estimateStopCache = mergeLaps(estimateStop());
       updateBuses(estimateStopCache, pollMs);
@@ -1071,7 +1157,7 @@ async function tick() {
       if (firstStopFit) { firstStopFit = false; fitStop(); }
     } else { updateBuses(estimateExplore(), pollMs); renderHero(); renderBusCard(); }
     renderHome();
-  } catch (e) { lastErr = true; renderFresh(); }
+  } catch (e) { if (!lastErr) { lastErr = true; renderHome(); } renderFresh(); }
   if (!document.hidden) tickT = setTimeout(tick, pollMs);
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) clearTimeout(tickT); else tick(); });
@@ -1114,7 +1200,14 @@ const fmtDist = m => m < 1000 ? `${Math.max(10, Math.round(m / 10) * 10)} m` : `
 const aDist = m => m < 15 ? 'aquí mesmo' : `a ${fmtDist(m)}`;
 // next departures at a stop, one row per line and destination
 function departures(id) {
-  const list = results.get(id); if (!list) return list;
+  const list = results.get(id);
+  // no live data for this stop (the Concello's API is down or didn't answer): the official timetable instead
+  if (!list && (list === null || lastErr)) {
+    const now = new Date(), g = new Map();
+    for (const x of schedule(id, null, now, 90)) { const k = x.line + '|' + x.ruta; if (!g.has(k)) g.set(k, { line: x.line, ruta: x.ruta, mins: [], live: false, sched: true }); g.get(k).mins.push(Math.round((x.t - now) / 60000)); }
+    return [...g.values()].sort((a, b) => a.mins[0] - b.mins[0]);
+  }
+  if (!list) return list;
   const g = new Map();
   for (const e of list) { if (e.minutos > 90) continue; const k = e.linea + '|' + e.ruta; if (!g.has(k)) g.set(k, { line: e.linea, ruta: e.ruta, mins: [], live: e.metros >= 0 }); g.get(k).mins.push(e.minutos); }
   return [...g.values()].map(x => (x.mins.sort((a, b) => a - b), x)).sort((a, b) => a.mins[0] - b.mins[0]);
@@ -1140,16 +1233,17 @@ function renderHome() {
     return;
   }
   let favs = prefs.favs.map(id => STOPS.get(id));
+  const down = lastErr ? '<div class="down">Sen datos en directo de Vitrasa agora mesmo: amosamos o horario oficial.</div>' : '';
   if (myPos) favs = favs.map(s => ({ s, m: hav([s.lat, s.lon], myPos) })).sort((a, b) => a.m - b.m).map(x => x.s);
   box.innerHTML = favs.map(s => {
     const deps = departures(s.id), dist = myPos ? `, ${aDist(hav([s.lat, s.lon], myPos))}` : '';
     const rows = deps === undefined ? `<div class="none">Consultando…</div>` : deps === null ? `<div class="none">Esta parada non responde agora.</div>`
       : !deps.length ? `<div class="none">Ningún bus na próxima hora e media.</div>`
-      : deps.slice(0, 4).map(d => `<div class="dep">${badge(d.line)}<span class="to"><b>${d.ruta}</b><span>${d.mins[0] <= 0 ? 'Na parada' : d.live ? `Chega ás ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}` : `Programado, ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}`}</span></span>${whenHtml(d.mins, d.live)}</div>`).join('')
+      : deps.slice(0, 4).map(d => `<div class="dep">${badge(d.line)}<span class="to"><b>${d.ruta}</b><span>${d.mins[0] <= 0 ? 'Na parada' : d.sched ? `Segundo o horario, ás ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}` : d.live ? `Chega ás ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}` : `Programado, ${hhmm(new Date(Date.now() + d.mins[0] * 60000))}`}</span></span>${whenHtml(d.mins, d.live)}</div>`).join('')
         + (deps.length > 4 ? `<button class="btn link" data-open="${s.id}">${deps.length - 4} máis nesta parada</button>` : '');
     return `<section class="fav"><div class="fav-h"><button class="fav-open" data-open="${s.id}">${shapeSvg(shapeFor(s.id))}<span class="nm"><b>${s.name}</b><span>Parada ${s.id}${dist}</span></span>${CHEVRON}</button>
       <button class="star" data-star="${s.id}" aria-pressed="true" aria-label="Quitar ${s.name} das miñas paradas">${STAR}</button></div>${rows}</section>`;
-  }).join('') + `<button class="add" id="favAdd">+ ${has ? 'Engadir outra parada' : 'Engadir unha parada'}</button>`;
+  }).join('').replace(/^/, down) + `<button class="add" id="favAdd">+ ${has ? 'Engadir outra parada' : 'Engadir unha parada'}</button>`;
   box.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openStop(+b.dataset.open));
   box.querySelectorAll('[data-star]').forEach(b => b.onclick = () => toggleFav(+b.dataset.star));
   box.querySelector('#favAdd').onclick = () => openFinder();
@@ -1255,6 +1349,28 @@ function schedule(stop, line, from, toMin) {
   }
   return out.sort((a, b) => a.t - b.t);
 }
+// Vitrasa splits some trips in two at a terminus: the A reaches "Universidade." and a minute later leaves Enxeñeiros,
+// two metres away, as another trip that goes round the campus. Same line, same spot, within a few minutes: same bus.
+const CONT = new Map();
+function continuations(pi) {
+  if (!CONT.has(pi)) {
+    const P = SCHED.patterns[pi], end = STOPS.get(P.stops[P.stops.length - 1]), near = id => { const s = STOPS.get(id); return s && end && hav([s.lat, s.lon], [end.lat, end.lon]) < 80; };
+    CONT.set(pi, SCHED.patterns.map((Q, qi) => qi).filter(qi => qi !== pi && SCHED.patterns[qi].line === P.line && near(SCHED.patterns[qi].stops[0])));
+  }
+  return CONT.get(pi);
+}
+// when a trip that passed 'pos' of pattern 'pi' at 'passT' gets to 'stop' (following its continuation if it ends before), or null
+function arrivalAt(pi, pos, passT, stop) {
+  const P = SCHED.patterns[pi], j = P.stops.indexOf(stop, pos + 1);
+  if (j >= 0) return new Date(passT.getTime() + (P.off[j] - P.off[pos]) * 60000);
+  const endT = new Date(passT.getTime() + (P.off[P.off.length - 1] - P.off[pos]) * 60000);
+  const day = new Date(endT); day.setHours(0, 0, 0, 0); const key = serviceKey(day), endMin = Math.round((endT - day) / 60000);
+  for (const qi of continuations(pi)) {
+    const k = SCHED.patterns[qi].stops.indexOf(stop); if (k < 0) continue;
+    for (const [start, svc] of TRIPS_BY_PAT[qi]) if (SVC[svc].has(key) && start >= endMin && start <= endMin + 6) return new Date(day.getTime() + (start + SCHED.patterns[qi].off[k]) * 60000);
+  }
+  return null;
+}
 const sameRuta = (a, b) => a.replace(/\W/g, '').toLowerCase() === b.replace(/\W/g, '').toLowerCase();
 function delayFor(line, ruta, min) {
   const now = new Date(), pred = new Date(now.getTime() + min * 60000);
@@ -1270,9 +1386,8 @@ function rutaReachesDest(line, ruta, passT) {
   if (c.some(x => sameRuta(x.ruta, ruta))) c = c.filter(x => sameRuta(x.ruta, ruta));
   const x = c.sort((a, b) => Math.abs(a.t - passT) - Math.abs(b.t - passT))[0];
   if (!x) return null;
-  const P = SCHED.patterns[x.pi], j = P.stops.indexOf(prefs.dest, x.pos + 1);
-  if (j < 0) return null;
-  return { t: new Date(x.t.getTime() + (P.off[j] - P.off[x.pos]) * 60000) };
+  const t = arrivalAt(x.pi, x.pos, x.t, prefs.dest);
+  return t ? { t } : null;
 }
 const hasSchedule = (stop, line) => (STOPIDX.get(stop) || []).some(([pi]) => SCHED.patterns[pi].line === line);
 function trips() {

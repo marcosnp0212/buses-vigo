@@ -94,6 +94,7 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 .fav + .fav { border-top: 2px solid var(--rule); padding-top: 14px; }
 .fav .none { font-size: 14px; color: var(--muted); padding: 4px 0 2px 34px; }
 .fav .btn.link { align-self: flex-start; padding: 0; }
+.down { font-size: 14px; color: var(--late); border: 2px solid currentColor; border-radius: 14px; padding: 8px 12px; }
 .add { display: flex; align-items: center; justify-content: center; gap: 8px; border: 2.5px dashed var(--rule); background: none; border-radius: 24px; padding: 12px; font-weight: 500; color: var(--muted); }
 .add:hover { color: var(--ink); border-color: var(--muted); }
 
