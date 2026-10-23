@@ -153,6 +153,10 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 .sp-head .meta { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 13px; margin-top: 4px; }
 .x { width: 44px; height: 44px; border: 2.5px solid var(--ink); background: none; border-radius: 50%; font-size: 14px; flex: none; }
 #stopPanel .list { overflow: auto; overscroll-behavior: contain; margin-top: 4px; }
+#stopPanel { transition: max-height 0.28s cubic-bezier(.3, .7, .2, 1); }
+.sp-grab { flex: none; display: flex; justify-content: center; align-items: center; height: 34px; margin: -16px -22px -6px; border: 0; background: none; padding: 0; }
+.sp-grab::before { content: ""; width: 36px; height: 4px; border-radius: 2px; background: var(--rule); }
+#stopPanel.min .list, #stopPanel.min .stopacts { display: none; }
 .arr { display: block; width: 100%; padding: 10px 0 4px; border: 0; border-top: 2px solid var(--rule); background: none; text-align: left; }
 .arr:first-child { border-top: 0; }
 .arr .ah { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
