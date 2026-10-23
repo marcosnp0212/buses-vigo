@@ -14,9 +14,55 @@ LIST = 'https://datos.vigo.org/data/trafico/camaras-trafico.json'
 UA = {'User-Agent': 'buses-vigo camera survey (github.com/marcosnp0212/buses-vigo)'}
 
 
-def get(url, timeout=20):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
+def get(url, timeout=20, headers=None):
+    with urllib.request.urlopen(urllib.request.Request(url, headers={**UA, **(headers or {})}), timeout=timeout) as r:
         return r.status, dict(r.headers), r.read()
+
+
+def concello_reachable(url):
+    # the image server didn't answer from GitHub (US) at all: try the usual variants once, and say what each did
+    tries = [(url, {}), (url, {'Referer': 'https://www.vigo.org/'}), (url.replace('http://', 'https://'), {}),
+             ('http://camaras.vigo.org/', {}), ('https://camaras.vigo.org/', {}), ('https://www.vigo.org/', {})]
+    for u, h in tries:
+        try:
+            st, hd, b = get(u, 30, h)
+            print(f'  {u} {h or ""}: HTTP {st}, {hd.get("Content-Type")}, {len(b)} bytes')
+        except Exception as e:
+            print(f'  {u} {h or ""}: {type(e).__name__}: {e}')
+
+
+BBOX = (42.14, 42.30, -8.86, -8.60)   # Vigo and around
+def dgt():
+    # DGT open data (NAP): traffic cameras in DATEX II; find the XML from the dataset pages, keep the ones around Vigo
+    import re
+    pages = ['https://nap.dgt.es/en/dataset/camaras-dgt-datex2-v3-7', 'https://nap.dgt.es/en/dataset/camaras-dgt-datex2-v3-6-nuevo', 'https://nap.dgt.es/dataset/camaras-dgt-datex2-v3-7']
+    xmls = []
+    for pg in pages:
+        try:
+            html = get(pg, 30)[2].decode('utf-8', 'replace')
+            xmls += [u for u in re.findall(r'href="([^"]+\.xml[^"]*)"', html)]
+        except Exception as e: print('  NAP page', pg, type(e).__name__, e)
+    xmls = list(dict.fromkeys(u if u.startswith('http') else 'https://nap.dgt.es' + u for u in xmls))
+    print('  DGT XML links:', xmls[:5])
+    for u in xmls[:3]:
+        try: txt = get(u, 60)[2].decode('utf-8', 'replace')
+        except Exception as e: print('  ', u, type(e).__name__, e); continue
+        print(f'  {u}: {len(txt)} chars')
+        # each camera: its coordinates and its image link, in document order
+        toks = [(m.start(), 'lat', float(m.group(1))) for m in re.finditer(r'<[^>]*latitude>\s*(-?[\d.]+)', txt)]
+        toks += [(m.start(), 'lon', float(m.group(1))) for m in re.finditer(r'<[^>]*longitude>\s*(-?[\d.]+)', txt)]
+        toks += [(m.start(), 'url', m.group(0)) for m in re.finditer(r'https?://[^<"\s]+?\.(?:jpe?g|png)', txt)]
+        toks.sort()
+        cams, lat, lon = [], None, None
+        for _, k, v in toks:
+            if k == 'lat': lat = v
+            elif k == 'lon': lon = v
+            elif lat is not None and lon is not None: cams.append((lat, lon, v)); lat = lon = None
+        near = [c for c in cams if BBOX[0] <= c[0] <= BBOX[1] and BBOX[2] <= c[1] <= BBOX[3]]
+        print(f'  cameras with image: {len(cams)}; around Vigo: {len(near)}')
+        for c in near: print('   ', c)
+        if cams: return near
+    return []
 
 
 def decode(s):  # Google encoded polyline -> [(lat, lon)]
@@ -84,7 +130,7 @@ def main():
             except Exception as e: r['size'] = f'not an image ({type(e).__name__})'
         except Exception as e: r['status'] = f'error {type(e).__name__}: {e}'
         return r
-    with ThreadPoolExecutor(12) as ex: rows = list(ex.map(probe, rows))
+    with ThreadPoolExecutor(30) as ex: rows = list(ex.map(probe, rows))
 
     # how often does the picture change? fetch again after 30 s and after 90 s
     def again(r):
@@ -92,9 +138,10 @@ def main():
         try: r['h2'] = hashlib.sha1(get(r['url'])[2]).hexdigest()[:10]
         except Exception: r['h2'] = 'error'
         return r
-    time.sleep(30)
+    anyok = any('h1' in r for r in rows)
+    if anyok: time.sleep(30)
     with ThreadPoolExecutor(12) as ex: rows = list(ex.map(again, rows))
-    time.sleep(60)
+    if anyok: time.sleep(60)
     def third(r):
         if 'h1' not in r: return r
         try: r['h3'] = hashlib.sha1(get(r['url'])[2]).hexdigest()[:10]
@@ -103,6 +150,19 @@ def main():
     with ThreadPoolExecutor(12) as ex: rows = list(ex.map(third, rows))
 
     ok = [r for r in rows if r.get('status') == 200 and 'x' in str(r.get('size'))]
+    if not ok and rows:
+        print('\nno Concello image answered; variants:'); concello_reachable(rows[0]['url'])
+    print('\nDGT cameras:'); near = dgt()
+    net_routes = routes
+    for lat, lon, u in near:
+        lines = sorted({l for l, pts in net_routes if dist_to_route((lat, lon), pts) <= 60})
+        try:
+            st2, h2, b2 = get(u, 30)
+            from PIL import Image
+            im = Image.open(io.BytesIO(b2)); print(f'   {u}: {im.width}x{im.height}, lines within 60 m: {",".join(lines) or "-"}')
+            im = im.convert('RGB'); im.thumbnail((480, 360)); bb = io.BytesIO(); im.save(bb, 'JPEG', quality=70)
+            print('IMG', 'dgt-' + u.rsplit('/', 1)[-1].split('?')[0].replace('.png', '.jpg'), base64.b64encode(bb.getvalue()).decode())
+        except Exception as e: print('  ', u, type(e).__name__, e)
     on_routes = [r for r in ok if r['lines']]
     print(f'\nimages working: {len(ok)}/{len(rows)}; on a bus route (<=40 m): {len(on_routes)}')
     print(f'changed after 30 s: {sum(r["h1"] != r.get("h2") for r in ok)}, after 90 s: {sum(r["h1"] != r.get("h3") for r in ok)}')
