@@ -200,7 +200,7 @@ function renderBusCard() {
     <div class="sub">As súas próximas paradas</div>${rows || `<div class="empty">Chegando ao final da liña.</div>`}
     <div class="actions"><button class="btn${following ? '' : ' pri'}" id="busFollow">${following ? 'Deixar de seguir' : 'Seguir este bus'}</button></div>`;
   el.hidden = false;
-  el.querySelector('#busClose').onclick = () => { busCardId = null; if (follow === b.id) { follow = null; renderHero(); restyleBuses(); } renderBusCard(); };
+  el.querySelector('#busClose').onclick = () => { busCardId = null; if (follow === b.id) { follow = null; renderHero(); restyleBuses(); } renderBusCard(); setHighlight(null); };
   el.querySelector('#busFollow').onclick = () => { follow = following ? null : b.id; if (follow) map.setView(b.marker.getLatLng(), Math.max(map.getZoom(), 15)); renderHero(); restyleBuses(); renderBusCard(); };
 }
 

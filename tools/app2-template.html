@@ -374,33 +374,24 @@ function drawRoutes() {
   const z = map.getZoom(), w = lineWidth();
   const line = (pts, o) => new OffsetLine(pts.ll, { ...o, slots: pts.slots, ns: pts.ns, gap: o.weight + 0.8, interactive: false, renderer: canvas, lineJoin: 'round', lineCap: 'round', smoothFactor: 1 });
   const whole = r => r.bundle ? r.bundle : { ll: r.coords };
-  let list, key;
-  if (mode === 'explore') {
-    // with dozens of lines, lanes would turn every main street into a 40-px band: then they are just drawn thinner
-    list = MAINS.filter(r => sel.has(r.line)); const many = list.length > 30, codes = new Set(list.map(r => r.line)).size;
-    // the more lines share the streets, the thinner each one, so a bundle stays narrow and every line visible in it
-    const lw = many ? w * 0.6 : codes <= 6 ? w : Math.max(2.5, w * 0.6);
-    key = ['e', dark, z, list.map(r => r.id)].join('|');
-    if (key !== routeKey) {
-      if (many) for (const r of list) r.bundle = null; else computeBundles(list, z);
-      routeLayer.clearLayers();
-      for (const r of list) line(whole(r), { color: r.color, weight: lw, opacity: 1 }).addTo(routeLayer);
-    }
-  } else {
-    // stop mode: only the lines that serve this stop, thin; the stretch each bus still has to run until the stop, thick in its lane
-    const shown = new Set();
-    for (const b of buses.values()) for (const r of (b.info.chain || [b.route])) shown.add(r);
-    for (const r of STOPS.get(focusStop).routes) if (r.main) shown.add(r);
-    list = [...shown].sort((a, b) => a.id < b.id ? -1 : 1); key = ['s', dark, z, list.map(r => r.id)].join('|');
-    if (key !== routeKey) { computeBundles(list, z); routeLayer.clearLayers(); for (const r of list) line(whole(r), { color: r.color, weight: 2.5, opacity: 0.35 }).addTo(routeLayer); }
+  // No whole lines by default: only the stretches still to run by the buses coming to your stops (or to the stop
+  // you opened), plus the one line you tapped. Lanes are worked out among everything drawn.
+  const coming = mode === 'stop' || mine(), lit = highlight ? MAINS.filter(r => r.line === highlight) : [];
+  const shown = new Set(lit);
+  if (coming) for (const b of buses.values()) for (const r of (b.info.chain || [b.route])) shown.add(r);
+  const list = [...shown].sort((a, b) => a.id < b.id ? -1 : 1), key = [mode, dark, z, highlight, list.map(r => r.id)].join('|');
+  if (key !== routeKey) {
+    computeBundles(list, z); routeLayer.clearLayers();
+    for (const r of lit) line(whole(r), { color: r.color, weight: coming ? 3 : w, opacity: coming ? 0.5 : 1 }).addTo(routeLayer);
   }
   // keep the full routes under the stops and the stretches to the stop
   if (key !== routeKey) { routeKey = key; routeLayer.getLayers().reverse().forEach(l => l.bringToBack()); }
-  const live = new Set(mode === 'stop' ? buses.keys() : []);
+  const live = new Set(coming ? buses.keys() : []);
   for (const [id, segs] of segLines) if (!live.has(id)) { for (const s of segs) segLayer.removeLayer(s.line); segLines.delete(id); }
   for (const id of live) {
     const b = buses.get(id), want = (b.toStop || []).map(([r, d0, d1]) => bundleSlice(r, d0, d1)), have = segLines.get(id) || [];
-    const ghost = !!b.info.ghost, style = { color: b.route.color, weight: w + (selectedBus === id ? 2 : 0), opacity: 1, dashArray: ghost ? '2 10' : null };
+    const ghost = !!b.info.ghost, many = new Set([...buses.values()].map(x => x.route.line)).size > 5;
+    const style = { color: b.route.color, weight: (many ? Math.max(3, w * 0.6) : w) + (selectedBus === id ? 2 : 0), opacity: 1, dashArray: ghost ? '2 10' : null };
     while (have.length > want.length) segLayer.removeLayer(have.pop().line);
     want.forEach((pts, i) => {
       let s = have[i];
@@ -454,7 +445,7 @@ function refreshStops() {
     const s = STOPS.get(id), special = false;
     let visible;
     if (mode === 'stop') visible = special || (z >= 14 && bounds.contains([s.lat, s.lon]) && stopRouteStops.has(id));
-    else visible = special || (bounds.contains([s.lat, s.lon]) && ((z >= 14 && [...s.lines].some(l => sel.has(l))) || z >= 16));
+    else visible = special || (bounds.contains([s.lat, s.lon]) && ((highlight && s.lines.has(highlight) && z >= 13) || z >= 15));
     if (id === focusStop || shapeFor(id)) visible = false;
     if (visible && !stopLayer.hasLayer(m)) { m.setStyle(stopStyle()); stopLayer.addLayer(m); }
     if (!visible && stopLayer.hasLayer(m)) stopLayer.removeLayer(m);
@@ -580,44 +571,56 @@ function estimateExplore() {
   for (const x of obs) { const tol = 300 + 0.6 * x.metros; if (!found.find(f => f.r.line === x.r.line && hav(pos(f), pos(x)) < tol)) found.push(x); }
   return found;
 }
-// stop mode: every estimate at the stop is one bus heading there
-function estimateStop() {
-  const list = results.get(focusStop) || [];
+// every estimate at a stop is one bus heading there
+function estimateStop(stop = focusStop) {
+  const list = results.get(stop) || [];
   const found = [], ghostSeen = new Map();
   for (const e of list) {
     // metros = -1: a scheduled departure the system can't locate yet (bus not out, or no GPS)
     if (e.metros < 0) {
-      const r = routesOfLine(e.linea).filter(x => x.stopById.has(focusStop)).sort((a, b) => b.main - a.main || b.rank - a.rank)[0];
+      const r = routesOfLine(e.linea).filter(x => x.stopById.has(stop)).sort((a, b) => b.main - a.main || b.rank - a.rank)[0];
       const key = r && r.id;
       if (r && !ghostSeen.has(key)) {
-        const g = { r, base: r, chain: [r], along: 0, ghost: true, noGps: true, metros: r.stopById.get(focusStop).d, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop, head: r.stops[0].name, laps: [e.minutos] };
+        const g = { r, base: r, chain: [r], along: 0, ghost: true, noGps: true, metros: r.stopById.get(stop).d, min: e.minutos, ruta: e.ruta, line: e.linea, stop: stop, head: r.stops[0].name, laps: [e.minutos] };
         ghostSeen.set(key, g); found.push(g);
       } else if (r) {
         // a later departure from the same head: same marker, one more time on it
         const g = ghostSeen.get(key); g.laps.push(e.minutos);
-        found.push({ r: null, noGps: true, lapOf: g, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop, head: r.stops[0].name });
-      } else found.push({ r: null, noGps: true, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop, head: null });
+        found.push({ r: null, noGps: true, lapOf: g, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: stop, head: r.stops[0].name });
+      } else found.push({ r: null, noGps: true, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: stop, head: null });
       continue;
     }
     const onMap = true;
-    const rs = onMap ? routesOfLine(e.linea).filter(r => r.stopById.has(focusStop)).sort((a, b) => b.main - a.main || b.rank - a.rank) : [];
-    if (!rs.length) { found.push({ r: null, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop }); continue; }
+    const rs = onMap ? routesOfLine(e.linea).filter(r => r.stopById.has(stop)).sort((a, b) => b.main - a.main || b.rank - a.rank) : [];
+    if (!rs.length) { found.push({ r: null, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: stop }); continue; }
     // with both directions through the stop, prefer the one where the bus is already on the trip
     let best = null;
     for (const r of rs) {
       // walk back from the stop along the bus's trips: this one, then the previous direction
       // (or the same loop for circular lines), as many times as the distance needs
-      let left = e.metros - r.stopById.get(focusStop).d, chain = [r], cur = r;
+      let left = e.metros - r.stopById.get(stop).d, chain = [r], cur = r;
       while (left > 0 && chain.length < 10) { cur = otherRoute(cur) || cur; chain.unshift(cur); if (left <= cur.length) break; left -= cur.length; }
       if (left > 0 && chain.length >= 10) continue;
       const along = left <= 0 ? -left : chain[0].length - left;
       const score = (chain.length - 1) * 2 + (r.main ? 0 : 1);
       if (!best || score < best.score) best = { r: chain[0], along, score, base: r, chain };
     }
-    if (!best) { found.push({ r: null, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop }); continue; }
-    found.push({ r: best.r, base: best.base, chain: best.chain, along: best.along, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: focusStop });
+    if (!best) { found.push({ r: null, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: stop }); continue; }
+    found.push({ r: best.r, base: best.base, chain: best.chain, along: best.along, metros: e.metros, min: e.minutos, ruta: e.ruta, line: e.linea, stop: stop });
   }
   return found;
+}
+// Home with saved stops (or a trip): only what is coming to them. The buses that reach one of your stops in the next
+// minutes, each with the stretch it still has to run; no whole lines, so the map stays readable.
+const SOON = 15, SHOWN = 5;
+const mine = () => mode === 'explore' && (prefs.favs.length > 0 || hasTrip());
+let highlight = null;   // the one line drawn whole, after tapping one of its buses
+function estimateMine() {
+  const stops = [...new Set([...prefs.favs, prefs.origin, prefs.dest])].filter(id => STOPS.has(id));
+  // the next arrivals at any of your stops, one bus per line and only a handful: what you would actually take
+  const all = stops.flatMap(id => estimateStop(id)).filter(f => f.r && !f.ghost && f.min <= SOON && sel.has(f.line)).sort((a, b) => a.min - b.min);
+  const seen = new Set();
+  return all.filter(f => !seen.has(f.line) && seen.add(f.line)).slice(0, SHOWN);
 }
 const buses = new Map(); let nextId = 1, follow = null;
 function busIcon(b) {
@@ -660,13 +663,15 @@ function placeBus(b, ll) {
   else if (!asMarker && b.onMap) { map.removeLayer(b.marker); b.onMap = false; }
   if (asDot) {
     if (!b.dot) {
-      b.dot = L.circleMarker(ll, dotStyle(b)).on('click', () => showBusCard(b));
+      b.dot = L.circleMarker(ll, { ...dotStyle(b), bubblingMouseEvents: false }).on('click', () => { showBusCard(b); setHighlight(b.route.line); });
       b.dot.bindTooltip(() => `<b>${b.route.line}</b> → ${b.info.ruta}`, { direction: 'top', offset: [0, -6] });
     } else b.dot.setLatLng(ll);
     if (!b.dotOn) { b.dot.addTo(map); b.dotOn = true; b.px = null; }
   } else if (b.dotOn) { map.removeLayer(b.dot); b.dotOn = false; }
 }
 function dropBus(b) { map.removeLayer(b.marker); if (b.dot) map.removeLayer(b.dot); }
+function setHighlight(line) { if (highlight === line) return; highlight = line; drawRoutes(); refreshStops(); }
+map.on('click', () => { if (highlight && mode === 'explore') { busCardId = null; renderBusCard(); setHighlight(null); } });
 function clearBuses() { for (const b of buses.values()) dropBus(b); buses.clear(); follow = null; selectedBus = null; }
 // Stop mode: pills that would cover each other fold into the one that arrives first, which shows "+N".
 function declutter() {
@@ -707,7 +712,7 @@ function updateBuses(found, pollMs) {
       const b = { id: nextId++, route: f.r, fix: f.along, shown: f.along, v: speed, info: f, onMap: false };
       b.marker = L.marker(pointAt(f.r, f.along), { icon: null, zIndexOffset: 1000, keyboard: false });
       setBusIcon(b); viewBounds = viewBounds || map.getBounds().pad(0.15); placeBus(b);
-      b.marker.on('click', () => { if (mode === 'stop') (b.more ? openCluster(b) : selectArrival(b.id)); else showBusCard(b); });
+      b.marker.on('click', () => { if (mode === 'stop') (b.more ? openCluster(b) : selectArrival(b.id)); else { showBusCard(b); setHighlight(b.route.line); } });
       if (mode === 'explore') b.marker.bindTooltip(() => `<b>${b.route.line}</b> → ${b.info.ruta}`, { direction: 'top', offset: [0, -14] });
       buses.set(b.id, b); seen.add(b.id);
     }
@@ -716,17 +721,19 @@ function updateBuses(found, pollMs) {
 }
 function restyleBuses() { for (const b of buses.values()) setBusIcon(b); }
 function segmentsToStop(b) { // stretch from the bus to the focused stop (possibly across the end of the other direction), as [route, from, to]
-  const base = b.info.base || b.route, sd = base.stopById.get(focusStop).d, chain = b.info.chain || [base];
+  const base = b.info.base || b.route, sd = base.stopById.get(b.info.stop).d, chain = b.info.chain || [base];
   if (chain.length === 1) return [[base, b.shown, sd]];
   return chain.map((r, i) => i === 0 ? [r, b.shown, r.length] : i === chain.length - 1 ? [r, 0, sd] : [r, 0, r.length]);
 }
+// in a stop, the way to it is drawn for the buses coming soon; the later ones are on the list
+const toStop = b => b.info.min <= 20 || selectedBus === b.id ? segmentsToStop(b) : [];
 let lastFrame = performance.now(), lastSeg = 0;
 setInterval(() => {
   if (document.hidden) return;
   const now = performance.now(), dt = Math.min((now - lastFrame) / 1000, 30); lastFrame = now;
   viewBounds = map.getBounds().pad(0.15);
   for (const b of buses.values()) {
-    const cap = mode === 'stop' && b.info.base === b.route && (b.info.chain || []).length <= 1 ? b.route.stopById.get(focusStop).d : b.route.length;
+    const cap = (mode === 'stop' || mine()) && b.info.base === b.route && (b.info.chain || []).length <= 1 ? b.route.stopById.get(b.info.stop).d : b.route.length;
     b.shown = Math.max(b.shown, Math.min(b.shown + b.v * dt, b.fix + 1500, cap));
     const ll = L.latLng(laneLatLng(b.route, b.shown, L.latLng(pointAt(b.route, b.shown))));
     if (b.onMap || b.dotOn) {
@@ -741,7 +748,7 @@ setInterval(() => {
     }
     placeBus(b, ll);
   }
-  if (mode === 'stop' && now - lastSeg > 1000) { lastSeg = now; for (const b of buses.values()) b.toStop = segmentsToStop(b); drawRoutes(); declutter(); }
+  if ((mode === 'stop' || mine()) && now - lastSeg > 1000) { lastSeg = now; for (const b of buses.values()) b.toStop = toStop(b); drawRoutes(); declutter(); }
   // panning every tick, even by zero pixels, fires moveend and redraws the whole map; only pan when the bus has moved
   if (follow && buses.has(follow)) {
     const p = map.latLngToContainerPoint(buses.get(follow).marker.getLatLng()), c = map.getSize().divideBy(2);
@@ -753,7 +760,7 @@ map.on('dragstart', () => { if (follow) { follow = null; if (mode === 'explore')
 // ---------- stop mode ----------
 function enterStop(id) {
   if (mode !== 'stop') clearBuses();
-  mode = 'stop'; focusStop = id; selectedBus = null;
+  mode = 'stop'; focusStop = id; selectedBus = null; highlight = null;
   clearBuses();
   document.getElementById('sheet').hidden = true;
   document.getElementById('busCard').hidden = true;
@@ -770,7 +777,7 @@ function enterStop(id) {
 }
 function exitStop() {
   if (mode !== 'stop') return;
-  mode = 'explore'; focusStop = null; selectedBus = null;
+  mode = 'explore'; focusStop = null; selectedBus = null; highlight = null;
   if (focusMarker) { map.removeLayer(focusMarker); focusMarker = null; }
   clearBuses(); drawShapes();
   document.getElementById('stopPanel').hidden = true;
@@ -787,6 +794,7 @@ function selectArrival(busId) {
   selectedBus = selectedBus === busId ? null : busId;
   const b = buses.get(busId);
   if (b && selectedBus) map.flyTo(b.marker.getLatLng(), Math.max(map.getZoom(), 15), { duration: 0.6 });
+  setHighlight(selectedBus && b ? b.route.line : null);
   restyleBuses(); drawRoutes(); renderStopPanel(); declutter();
 }
 // The line drawn straight: the last stops before yours and where the bus is between them.
@@ -869,11 +877,12 @@ async function tick() {
   const myMode = mode, myStop = focusStop;
   let ids;
   if (mode === 'stop') { ids = [focusStop, prefs.origin, prefs.dest, ...prefs.favs]; pollMs = STOP_POLL_MS; }
+  else if (mine()) { ids = [prefs.origin, prefs.dest, ...prefs.favs]; pollMs = STOP_POLL_MS; }
   else { const s = sampleStops(); ids = [prefs.origin, prefs.dest, ...prefs.favs, ...s]; }
   ids = [...new Set(ids)].filter(Boolean);
   // a full round is a couple hundred requests: with nothing on the map yet, show buses as the answers come in
   let lastPart = performance.now();
-  const onPart = mode === 'explore' && !buses.size ? part => {
+  const onPart = mode === 'explore' && !mine() && !buses.size ? part => {
     const t = performance.now(); if (t - lastPart < 700 || myMode !== mode) return; lastPart = t;
     results = new Map(part); updateBuses(estimateExplore(), pollMs);
     if (!hasTrip() || results.has(prefs.origin)) renderHero();
@@ -883,7 +892,7 @@ async function tick() {
     const t0 = performance.now();
     const r = await pool(ids, 8, fetchStop, onPart);
     // refresh as often as the network allows: never faster than 15 s, and leave the API time to breathe
-    if (mode === 'explore') pollMs = Math.round(Math.min(45000, Math.max(15000, (performance.now() - t0) * 3)));
+    if (mode === 'explore' && !mine()) pollMs = Math.round(Math.min(45000, Math.max(15000, (performance.now() - t0) * 3)));
     lastFetch = { stops: ids.length, ms: Math.round(performance.now() - t0) };
     if (myMode !== mode || myStop !== focusStop) return;   // mode changed while we were fetching
     const ok = [...r.values()].filter(Boolean).length;
@@ -892,10 +901,14 @@ async function tick() {
     if (mode === 'stop') {
       estimateStopCache = mergeLaps(estimateStop());
       updateBuses(estimateStopCache, pollMs);
-      for (const b of buses.values()) b.toStop = segmentsToStop(b);
+      for (const b of buses.values()) b.toStop = toStop(b);
       collectStopRouteStops(); refreshStops(); declutter();
       drawRoutes(); renderStopPanel();
       if (firstStopFit) { firstStopFit = false; fitStop(); }
+    } else if (mine()) {
+      updateBuses(estimateMine(), pollMs);
+      for (const b of buses.values()) b.toStop = toStop(b);
+      drawRoutes(); refreshStops(); renderHero(); renderBusCard();
     } else { updateBuses(estimateExplore(), pollMs); renderHero(); renderBusCard(); }
     renderHome();
   } catch (e) { if (!lastErr) { lastErr = true; renderHome(); } renderFresh(); }
@@ -959,6 +972,7 @@ function toggleFav(id) {
   savePrefs(); toast(adding ? `${shortName(stopName(id))} gardada nas miñas paradas` : `${shortName(stopName(id))} quitada das miñas paradas`);
   if (adding && !results.has(id)) fetchStop(id).then(l => { results.set(id, l); renderHome(); }, () => {});
   refreshAutoLines(); renderHome(); drawShapes(); refreshStops();
+  if (mode === 'explore') restartPolling(true);   // the stops watched (and so the buses drawn) changed
 }
 function renderHome() {
   const box = document.getElementById('favs'), has = prefs.favs.length > 0, trip = !!(prefs.origin || prefs.dest);
