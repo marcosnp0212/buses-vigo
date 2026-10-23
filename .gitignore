@@ -1,2 +1,5 @@
 tools/gtfs/
 tools/*.json
+tests/node_modules
+tests/out/
+tests/package-lock.json
