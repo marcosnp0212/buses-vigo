@@ -235,6 +235,8 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 .stn-lbl { position: absolute; left: 30px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 600 13px/1 var(--font); color: var(--ink);
   text-shadow: 0 0 2px var(--land), 0 0 2px var(--land), 0 0 3px var(--land), 0 0 4px var(--land); pointer-events: none; }
 .stn-lbl.left { left: auto; right: 30px; }
+.stop-lbl { position: absolute; left: 11px; top: -8px; white-space: nowrap; font: 500 12.5px/16px var(--font); color: var(--ink);
+  text-shadow: 0 0 2px var(--land), 0 0 2px var(--land), 0 0 3px var(--land), 0 0 4px var(--land); pointer-events: none; }
 .stn-lbl[hidden] { display: none; }
 .busp.sel { outline: 3px solid var(--ink); outline-offset: 1px; }
 .busp.ghost { border-style: dashed; opacity: 0.92; }

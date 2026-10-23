@@ -232,17 +232,33 @@ const map = L.map('map', { zoomControl: false, preferCanvas: false }).setView([4
 let baseLayer = null; const styleCache = {};
 const ATTR = '© OpenStreetMap · OpenFreeMap · datos: Concello de Vigo / Vitrasa';
 // Our own palette on top of OpenFreeMap: the stock dark style is nearly black (streets #181818 on #0c0c0c).
-// Base map in the manner of Mini Metro: land and water only, plus the names of places to find your way.
-const BASE = { light: { land: '#f2efe8', water: '#c4dbe6', text: '#9b968c' }, dark: { land: '#1f2830', water: '#141b21', text: '#6f7b84' } };
+// Quiet, but enough to find your way: streets with their names, parks, water, buildings up close and the names of
+// neighbourhoods. Shields, boundaries, paths and the rest of the clutter are left out.
+const BASE = {
+  light: { land: '#f2efe8', water: '#bcd6e3', park: '#dce6cf', wood: '#e2e8d6', building: '#e4ded2', road: '#ffffff', casing: '#ddd6c8', minor: '#fbf9f5', rail: '#cfc8bb', text: '#6f6a61', place: '#4f4b45' },
+  dark: { land: '#1f2830', water: '#131b21', park: '#22322b', wood: '#212e29', building: '#27323b', road: '#33414c', casing: '#182128', minor: '#2b3741', rail: '#3a4651', text: '#9aa3a9', place: '#c5ccd1' },
+};
+const KEEP = /^(background|park|water|waterway|landcover_wood|building|highway_(minor|major_casing|major_inner|major_subtle|motorway_casing|motorway_inner|motorway_subtle|motorway_bridge_casing|motorway_bridge_inner)|tunnel_motorway_(casing|inner)|railway|road_pier|water_name_(point|line)_label|waterway_line_label|highway-name-(minor|major)|label_(other|village|town|city))$/;
 function tint(style, isDark) {
   const c = BASE[isDark ? 'dark' : 'light'];
-  style.layers = style.layers.filter(l => l.type === 'background' || (/^water/.test(l.id) && (l.type === 'fill' || l.type === 'line')) || (l.type === 'symbol' && /^place_(city|town|village|suburb|neighbourhood|quarter|hamlet)/.test(l.id)));
+  style.layers = style.layers.filter(l => KEEP.test(l.id));
   for (const l of style.layers) {
-    const p = l.paint || (l.paint = {});
-    if (l.type === 'background') p['background-color'] = c.land;
-    else if (l.type === 'fill') { p['fill-color'] = c.water; delete p['fill-pattern']; p['fill-opacity'] = 1; }
-    else if (l.type === 'line') p['line-color'] = c.water;
-    else { p['text-color'] = c.text; p['text-halo-color'] = c.land; p['text-halo-width'] = 1.4; }
+    const p = l.paint || (l.paint = {}), id = l.id;
+    if (id === 'background') p['background-color'] = c.land;
+    else if (id === 'water') { p['fill-color'] = c.water; p['fill-opacity'] = 1; delete p['fill-pattern']; }
+    else if (id === 'waterway') p['line-color'] = c.water;
+    else if (id === 'park') { p['fill-color'] = c.park; p['fill-opacity'] = 1; delete p['fill-pattern']; }
+    else if (id === 'landcover_wood') { p['fill-color'] = c.wood; p['fill-opacity'] = 1; delete p['fill-pattern']; }
+    else if (id === 'building') { p['fill-color'] = c.building; p['fill-outline-color'] = c.casing; p['fill-opacity'] = ['interpolate', ['linear'], ['zoom'], 14.5, 0, 16, 1]; l.minzoom = 14.5; }
+    else if (id === 'railway' || id === 'road_pier') p['line-color'] = c.rail;
+    else if (/casing$/.test(id)) p['line-color'] = c.casing;
+    else if (id === 'highway_minor') p['line-color'] = c.minor;
+    else if (l.type === 'line') p['line-color'] = c.road;
+    else if (l.type === 'symbol') {
+      const big = /^label_/.test(id);
+      p['text-color'] = big ? c.place : /water/.test(id) ? (isDark ? '#6f8a99' : '#5d8296') : c.text;
+      p['text-halo-color'] = c.land; p['text-halo-width'] = 1.6;
+    }
   }
   return style;
 }
@@ -518,7 +534,8 @@ function drawRoutes() {
 
 const stopMarkers = new Map();
 function stopStyle() {
-  return { radius: map.getZoom() >= 15 ? 5 : 4, color: dark ? '#ece9e2' : '#2b2d2f', weight: 2.2, fillColor: dark ? '#1f2830' : '#ffffff', fillOpacity: 1 };
+  const z = map.getZoom();
+  return { radius: z >= 17 ? 7 : z >= 15 ? 6 : 4.5, color: dark ? '#ece9e2' : '#2b2d2f', weight: z >= 15 ? 2.6 : 2.2, fillColor: dark ? '#1f2830' : '#ffffff', fillOpacity: 1 };
 }
 // Station shapes, as in the game: each saved stop has its own, the destination of your trip is a star.
 const poly = (n, r, rot = -90, inner) => { const pts = []; for (let i = 0; i < n * (inner ? 2 : 1); i++) { const a = (rot + i * 360 / (n * (inner ? 2 : 1))) * Math.PI / 180, rr = inner && i % 2 ? inner : r; pts.push((13 + rr * Math.cos(a)).toFixed(2) + ' ' + (13 + rr * Math.sin(a)).toFixed(2)); } return `<path d="M${pts.join('L')}Z"/>`; };
@@ -575,6 +592,22 @@ function refreshStops() {
     if (id === focusStop || shapeFor(id)) visible = false;
     if (visible && !stopLayer.hasLayer(m)) { m.setStyle(stopStyle()); stopLayer.addLayer(m); }
     if (!visible && stopLayer.hasLayer(m)) stopLayer.removeLayer(m);
+  }
+  nameStops();
+}
+// up close, every stop on screen says its name, so you can tell which one is yours without tapping
+const stopNames = L.layerGroup().addTo(map);
+function nameStops() {
+  stopNames.clearLayers();
+  if (map.getZoom() < 17) return;
+  const b = map.getBounds(), placed = [];
+  for (const [id, m] of stopMarkers) {
+    if (!stopLayer.hasLayer(m) || !b.contains(m.getLatLng())) continue;
+    const p = map.latLngToContainerPoint(m.getLatLng()), name = shortName(STOPS.get(id).name), w = 7.2 * name.length + 8;
+    const box = [p.x + 11, p.y - 9, p.x + 11 + w, p.y + 9];
+    if (placed.some(q => box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1])) continue;
+    placed.push(box);
+    L.marker(m.getLatLng(), { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<span class="stop-lbl">${name}</span>` }), interactive: false, keyboard: false }).addTo(stopNames);
   }
 }
 map.on('zoomend moveend', refreshStops);

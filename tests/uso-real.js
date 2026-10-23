@@ -2,13 +2,14 @@
 // revisión de accesibilidade (contraste, tamaño de letra e de botóns, nomes para lectores de pantalla, nada tapado).
 //
 //   cd tests && npm install && node uso-real.js            (CHROME=/ruta/a/chrome se non está en /opt/pw-browsers)
+//   REAL=1 node uso-real.js     co mapa e a API de verdade (precisa internet; así córrese en GitHub Actions)
 //
 // A API de Vitrasa simúlase con datos coherentes coa rede real (liñas que pasan pola parada, destinos reais,
 // metros que cadran cos minutos) e en ISO-8859-1, como a de verdade. Capturas en tests/out/.
 const { chromium } = require('playwright-core');
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..'), OUT = path.join(__dirname, 'out'), NM = process.env.NM || path.join(__dirname, 'node_modules');
-const CHROME = process.env.CHROME || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', '/opt/pw-browsers/chromium'].find(f => fs.existsSync(f));
+const CHROME = process.env.CHROME || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', '/opt/pw-browsers/chromium'].find(f => fs.existsSync(f)), REAL = !!process.env.REAL;
 fs.mkdirSync(OUT, { recursive: true });
 
 // ---------- API simulada ----------
@@ -103,6 +104,7 @@ async function newPhone(browser, { dark = false, desktop = false, state } = {}) 
   page.on('pageerror', e => errors.push(e.message));
   await ctx.route('**/*', route => {
     const u = route.request().url();
+    if (REAL && !u.startsWith('http://local/') && !(apiDown && u.includes('datos.vigo.org'))) return route.continue();
     const lib = { 'leaflet-maplibre-gl.js': '@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js', 'leaflet.js': 'leaflet/dist/leaflet.js', 'leaflet.css': 'leaflet/dist/leaflet.css', 'maplibre-gl.js': 'maplibre-gl/dist/maplibre-gl.js', 'maplibre-gl.css': 'maplibre-gl/dist/maplibre-gl.css' };
     for (const k in lib) if (u.endsWith(k)) return route.fulfill({ path: path.join(NM, lib[k]) });
     if (u.includes('fonts.googleapis')) return route.fulfill({ contentType: 'text/css', body: [300, 400, 500, 600].map(w => `@font-face{font-family:'Jost';font-weight:${w};src:url(http://local/__font/jost-latin-${w}-normal.woff2)}`).join('\n') });

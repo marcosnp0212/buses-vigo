@@ -1,0 +1,26 @@
+name: Proba de uso real
+
+# A app usada como o faría unha persoa, co mapa e a API de Vitrasa de verdade. As capturas quedan como artefacto.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['index.html', 'data/**', 'tests/**', '.github/workflows/uso-real.yml']
+
+jobs:
+  uso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Dependencias
+        working-directory: tests
+        run: npm install && npx --yes playwright@1.64.1 install --with-deps chromium
+      - name: Proba
+        working-directory: tests
+        run: REAL=1 node uso-real.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: capturas, path: tests/out/, retention-days: 7 }
