@@ -640,8 +640,19 @@ const OffsetLine = L.Polyline.extend({
     const g = this.options.gap, ns = this.options.ns;
     // each point moved along the bisector of its two segments, by enough that both segments end up parallel (a miter)
     const nrm = (a, b) => { const dx = b.x - a.x, dy = b.y - a.y, n = Math.hypot(dx, dy); return n ? [-dy / n, dx / n] : null; };
+    // a stretch shorter than the offset would turn into a loop (the little crosses at corners): drop such points first
+    const off = i => (s[i] || 0) * Math.min(g, BUNDLE_PX / Math.max(1, ns[i] || 1));
+    this._rings = this._rings.map(ring => {
+      const idx = [0];
+      for (let i = 1; i < ring.length; i++) {
+        const min = Math.max(3, Math.abs(off(i)) * 1.2), last = ring[idx[idx.length - 1]];
+        if (Math.hypot(ring[i].x - last.x, ring[i].y - last.y) >= min) idx.push(i);
+        else if (i === ring.length - 1) { if (idx.length > 1) idx[idx.length - 1] = i; else idx.push(i); }
+      }
+      return idx.map(i => Object.assign(ring[i], { o: off(i) }));
+    });
     this._rings = this._rings.map(r => r.map((p, i) => {
-      const o = (s[i] || 0) * Math.min(g, BUNDLE_PX / Math.max(1, ns[i] || 1)); if (!o) return p;
+      const o = p.o; if (!o) return p;
       let j = i - 1; while (j >= 0 && !nrm(r[j], p)) j--;
       let k = i + 1; while (k < r.length && !nrm(p, r[k])) k++;
       const n1 = j >= 0 ? nrm(r[j], p) : null, n2 = k < r.length ? nrm(p, r[k]) : null, a = n1 || n2, b = n2 || n1;
