@@ -2,13 +2,14 @@
 // revisión de accesibilidade (contraste, tamaño de letra e de botóns, nomes para lectores de pantalla, nada tapado).
 //
 //   cd tests && npm install && node uso-real.js            (CHROME=/ruta/a/chrome se non está en /opt/pw-browsers)
+//   REAL=1 node uso-real.js     co mapa e a API de verdade (precisa internet; así córrese en GitHub Actions)
 //
 // A API de Vitrasa simúlase con datos coherentes coa rede real (liñas que pasan pola parada, destinos reais,
 // metros que cadran cos minutos) e en ISO-8859-1, como a de verdade. Capturas en tests/out/.
 const { chromium } = require('playwright-core');
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..'), OUT = path.join(__dirname, 'out'), NM = process.env.NM || path.join(__dirname, 'node_modules');
-const CHROME = process.env.CHROME || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', '/opt/pw-browsers/chromium'].find(f => fs.existsSync(f));
+const CHROME = process.env.CHROME || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', '/opt/pw-browsers/chromium'].find(f => fs.existsSync(f)), REAL = !!process.env.REAL;
 fs.mkdirSync(OUT, { recursive: true });
 
 // ---------- API simulada ----------
@@ -79,7 +80,26 @@ async function drag(page, x, y, dx, dy) {
   for (let i = 1; i <= steps; i++) { await s.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * i / steps, y: y + dy * i / steps }] }); await page.waitForTimeout(16); }
   await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await pause(page, 900);
 }
-async function doubleTap(page, x, y) { await page.touchscreen.tap(x, y); await page.waitForTimeout(120); await page.touchscreen.tap(x, y); await pause(page, 1200); }
+// achegar co xesto de pinza: dous dedos que se separan
+async function pinch(page, x, y, from = 20, to = 70) {
+  const s = await page.context().newCDPSession(page), steps = 12, pts = d => [{ x: x - d, y, id: 1 }, { x: x + d, y, id: 2 }];
+  await s.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pts(from) });
+  for (let i = 1; i <= steps; i++) { await s.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pts(from + (to - from) * i / steps) }); await page.waitForTimeout(16); }
+  await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await pause(page, 1500);
+}
+// un sitio do mapa sen nada enriba (nin paneis, nin buses, nin liñas ou paradas en 24 px): onde tocaría unha persoa
+async function emptySpot(page) {
+  return page.evaluate(() => {
+    const cv = [...document.querySelectorAll('.leaflet-overlay-pane canvas')], top = 140, bottom = Math.min(...['sheet', 'stopPanel'].map(id => document.getElementById(id)).filter(e => e && !e.hidden).map(e => e.getBoundingClientRect().top), innerHeight) - 30;
+    const clear = (x, y) => {
+      for (const [dx, dy] of [[0, 0], [-24, 0], [24, 0], [0, -24], [0, 24]]) { const el = document.elementFromPoint(x + dx, y + dy); if (!el || !el.closest('#map') || el.closest('.leaflet-marker-icon')) return false; }
+      for (const c of cv) { const r = c.getBoundingClientRect(), k = c.width / r.width, d = c.getContext('2d').getImageData((x - r.left - 24) * k, (y - r.top - 24) * k, 48 * k, 48 * k).data; for (let i = 3; i < d.length; i += 4) if (d[i]) return false; }
+      return true;
+    };
+    for (let y = top; y < bottom; y += 20) for (let x = 100; x < innerWidth - 160; x += 20) if (clear(x, y)) return { x, y };
+    return null;
+  });
+}
 // cantas cores de liña (non fondo) hai debuxadas no mapa nunha zona
 async function inkOnMap(page) {
   return page.evaluate(() => { let n = 0; for (const c of document.querySelectorAll('.leaflet-overlay-pane canvas')) { const x = c.getContext('2d'), d = x.getImageData(0, 0, c.width, c.height).data; for (let i = 0; i < d.length; i += 16) if (d[i + 3] > 200 && Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 60) n++; } return n; });
@@ -103,6 +123,7 @@ async function newPhone(browser, { dark = false, desktop = false, state } = {}) 
   page.on('pageerror', e => errors.push(e.message));
   await ctx.route('**/*', route => {
     const u = route.request().url();
+    if (REAL && !u.startsWith('http://local/') && !(apiDown && u.includes('datos.vigo.org'))) return route.continue();
     const lib = { 'leaflet-maplibre-gl.js': '@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js', 'leaflet.js': 'leaflet/dist/leaflet.js', 'leaflet.css': 'leaflet/dist/leaflet.css', 'maplibre-gl.js': 'maplibre-gl/dist/maplibre-gl.js', 'maplibre-gl.css': 'maplibre-gl/dist/maplibre-gl.css' };
     for (const k in lib) if (u.endsWith(k)) return route.fulfill({ path: path.join(NM, lib[k]) });
     if (u.includes('fonts.googleapis')) return route.fulfill({ contentType: 'text/css', body: [300, 400, 500, 600].map(w => `@font-face{font-family:'Jost';font-weight:${w};src:url(http://local/__font/jost-latin-${w}-normal.woff2)}`).join('\n') });
@@ -137,8 +158,8 @@ async function newPhone(browser, { dark = false, desktop = false, state } = {}) 
   await tap(page, second.locator('[data-star]'));
   await tap(page, page.locator('#fdClose'));
 
-  // 3. Inicio: cando chega cada bus ás súas paradas
-  await pause(page, 3000);
+  // 3. Inicio: cando chega cada bus ás súas paradas (coa API de verdade pode tardar un pouco)
+  await page.locator('#favs .dep').first().waitFor({ timeout: 15000 }).catch(() => {}); await pause(page, 1500);
   const rows = await page.locator('#favs .dep').count();
   check('3. inicio: amosa chegadas ás dúas paradas', rows >= 2 && await page.locator('#favs .fav').count() === 2, `${rows} chegadas`);
   check('3. inicio: di que os datos son en directo', await page.getByText('En directo').isVisible());
@@ -155,12 +176,15 @@ async function newPhone(browser, { dark = false, desktop = false, state } = {}) 
   await tap(page, page.locator('.busp').first());
   check('5. tocar un bus abre a súa ficha', await page.locator('#busCard').isVisible());
   await screenCheck(page, '5. ficha do bus', '05-bus');
-  await page.touchscreen.tap(60, 420); await pause(page, 800);
+  { const e = await emptySpot(page); if (e) await page.touchscreen.tap(e.x, e.y); await pause(page, 800); }
   check('5. tocar o mapa pecha a ficha', !(await page.locator('#busCard').isVisible()));
 
-  // 6. Arrasta o mapa co dedo e achégase con dobre toque
+  // 6. Arrasta o mapa co dedo e achégase coa pinza
   await drag(page, 200, 500, -80, -120);
-  await doubleTap(page, 200, 420);
+  const z0 = await page.evaluate(() => document.querySelector('.leaflet-proxy') && getComputedStyle(document.querySelector('.leaflet-proxy')).transform);
+  { const e = await emptySpot(page) || { x: 195, y: 400 }; await pinch(page, e.x, e.y); }
+  const z1 = await page.evaluate(() => document.querySelector('.leaflet-proxy') && getComputedStyle(document.querySelector('.leaflet-proxy')).transform);
+  check('6. a pinza achega o mapa', z0 !== z1);
   check('6. arrastrar e achegar sen erros', errors.length === 0, errors.join('; '));
   await screenCheck(page, '6. mapa achegado', '06-achegado');
 
