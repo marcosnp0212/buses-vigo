@@ -1,0 +1,16 @@
+name: Cámaras de tráfico
+
+# Estudo: que cámaras públicas do Concello ven as liñas de Vitrasa e cada canto cambian as súas imaxes.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['tools/camaras.py', '.github/workflows/camaras.yml']
+
+jobs:
+  camaras:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install --quiet pillow && python3 tools/camaras.py

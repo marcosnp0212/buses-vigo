@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Comprobar coas cámaras · Buses Vigo</title>
+<meta name="description" content="Compara onde debuxa a app cada bus co que ven as cámaras de tráfico do Concello de Vigo.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --land: #f2efe8; --raise: #e7e2d7; --ink: #2b2d2f; --muted: #625e57; --rule: #dcd6ca; --live: #1f6f3a; --late: #a14915; --focus: #2f6fa8;
+  --font: "Jost", "Futura", system-ui, sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --land: #1f2830; --raise: #2a353e; --ink: #ece9e2; --muted: #a3abb1; --rule: #34414b; --live: #5cc485; --late: #f0a35e; --focus: #8cc2ee; color-scheme: dark; } }
+:root[data-theme="dark"] { --land: #1f2830; --raise: #2a353e; --ink: #ece9e2; --muted: #a3abb1; --rule: #34414b; --live: #5cc485; --late: #f0a35e; --focus: #8cc2ee; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--land); color: var(--ink); font: 400 16px/1.4 var(--font); -webkit-font-smoothing: antialiased; }
+button, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; }
+main { max-width: 560px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+header a { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 2.5px solid var(--ink); border-radius: 50%; color: var(--ink); text-decoration: none; font-size: 20px; flex: none; }
+h1 { font: 500 24px/1.15 var(--font); margin: 0; }
+h2 { font: 500 18px/1.2 var(--font); margin: 22px 0 8px; }
+p { margin: 6px 0; }
+.muted { color: var(--muted); font-size: 14px; }
+select { width: 100%; min-height: 48px; border: 2.5px solid var(--ink); border-radius: 24px; background: var(--land); padding: 0 16px; margin: 8px 0; }
+.cam { position: relative; border: 2.5px solid var(--ink); border-radius: 18px; overflow: hidden; background: var(--raise); aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; }
+.cam img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam .age { position: absolute; left: 8px; bottom: 8px; background: var(--land); color: var(--ink); border-radius: 10px; padding: 2px 8px; font-size: 13px; }
+.cam .fail { padding: 18px; text-align: center; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border-radius: 23px; padding: 0 18px; font-weight: 500; border: 2.5px solid var(--ink); background: none; color: var(--ink); text-decoration: none; }
+.btn.pri { background: var(--ink); color: var(--land); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.bus { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 2px solid var(--rule); }
+.bus .b { min-width: 40px; height: 34px; border-radius: 17px; display: inline-flex; align-items: center; justify-content: center; font: 600 14px var(--font); padding: 0 8px; flex: none; }
+.bus .t { flex: 1; min-width: 0; }
+.bus .t b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bus .t span { font-size: 14px; color: var(--muted); }
+.bus.now { background: var(--raise); border-radius: 14px; padding: 12px; border-bottom: 0; margin: 6px 0; }
+.bus.now .t span { color: var(--live); font-weight: 600; }
+.ask { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.ask .btn { min-height: 44px; padding: 0 14px; font-size: 15px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stats div { background: var(--raise); border-radius: 14px; padding: 10px; text-align: center; }
+.stats b { display: block; font: 500 26px/1.1 var(--font); }
+.stats span { font-size: 13px; color: var(--muted); }
+.empty { color: var(--muted); padding: 12px 0; }
+</style>
+</head>
+<body>
+<main>
+  <header><a href="./" aria-label="Volver á app">←</a><h1>Comprobar coas cámaras</h1></header>
+  <p class="muted">A app non ten o GPS dos buses: calcula onde está cada un coa distancia que dá a API ata as paradas. Aquí comparas ese cálculo co que ve unha cámara de tráfico do Concello. Cando a app di que un bus está diante da cámara, mira a imaxe e responde.</p>
+
+  <select id="camSel" aria-label="Cámara"></select>
+  <div class="cam" id="cam"><span class="muted">Cargando…</span></div>
+  <p class="muted" id="camInfo"></p>
+
+  <h2>Que debería verse</h2>
+  <div id="buses"><div class="empty">Consultando os buses…</div></div>
+
+  <h2>Os teus resultados</h2>
+  <div class="stats" id="stats"></div>
+  <p class="muted" id="statsTxt"></p>
+  <div class="row"><button class="btn" id="copy">Copiar os resultados</button><button class="btn" id="clear">Borrar</button></div>
+  <p class="muted">As respostas gárdanse só neste dispositivo. As imaxes son das cámaras públicas de tráfico do Concello de Vigo: non se gardan.</p>
+</main>
+<script type="module">
+const API = 'https://datos.vigo.org/vci_api_app/api2.jsp?ttl=5&tipo=TRANSPORTE-ESTIMACION-PARADA&id=';
+const VIEW = 60, NEAR = 40;   // m: a bus this close to the camera is in the picture; routes this close pass in front of it
+const $ = id => document.getElementById(id);
+try { const t = JSON.parse(localStorage.getItem('busprefs2') || '{}').theme; if (t && t !== 'auto') document.documentElement.dataset.theme = t; } catch (e) {}
+
+// ---------- network (same geometry as the app) ----------
+const hav = (a, b) => { const t = Math.PI / 180, dLat = (b[0] - a[0]) * t, dLon = (b[1] - a[1]) * t, s = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * t) * Math.cos(b[0] * t) * Math.sin(dLon / 2) ** 2; return 2 * 6371000 * Math.asin(Math.sqrt(s)); };
+function decode(s) { const out = []; let i = 0, lat = 0, lon = 0; const next = () => { let v = 0, sh = 0, b; do { b = s.charCodeAt(i++) - 63; v |= (b & 31) << sh; sh += 5; } while (b >= 32); return v & 1 ? ~(v >> 1) : v >> 1; }; while (i < s.length) { lat += next(); lon += next(); out.push([lat / 1e5, lon / 1e5]); } return out; }
+const [NET, CAMS] = await Promise.all(['net', 'camaras'].map(f => fetch(`data/${f}.json`).then(r => r.json())));
+// text on a line colour: white or near-black, whichever has more contrast
+const lum = h => { const c = parseInt(h.slice(1), 16); return [c >> 16, (c >> 8) & 255, c & 255].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0); };
+const COLOR = {}, TEXT = {}; for (const l of NET.lines) { COLOR[l.code] = l.color; TEXT[l.code] = (lum(l.color) + 0.05) / 0.0625 > 1.05 / (lum(l.color) + 0.05) ? '#1f211d' : '#ffffff'; }
+const STOPNAME = id => (NET.stops[id] || [`Parada ${id}`])[0];
+const ROUTES = NET.routes.filter(r => r.main).map(r => {
+  const coords = decode(r.coords), cum = [0];
+  for (let i = 1; i < coords.length; i++) cum.push(cum[i - 1] + hav(coords[i - 1], coords[i]));
+  return { ...r, coords, cum, stops: r.stops.map(([id, d]) => ({ id, d })) };
+});
+const MX = Math.cos(42.22 * Math.PI / 180) * 111320, MY = 110540;
+// where a point falls along a route: distance along it and how far off it is
+function project(r, p) {
+  let best = { off: 1e9, d: 0 };
+  for (let i = 1; i < r.coords.length; i++) {
+    const [a1, o1] = r.coords[i - 1], [a2, o2] = r.coords[i], x1 = o1 * MX, y1 = a1 * MY, dx = o2 * MX - x1, dy = a2 * MY - y1, L2 = dx * dx + dy * dy || 1;
+    const f = Math.max(0, Math.min(1, ((p[1] * MX - x1) * dx + (p[0] * MY - y1) * dy) / L2)), off = Math.hypot(p[1] * MX - x1 - f * dx, p[0] * MY - y1 - f * dy);
+    if (off < best.off) best = { off, d: r.cum[i - 1] + f * (r.cum[i] - r.cum[i - 1]) };
+  }
+  return best;
+}
+// for each camera: the routes that pass in front of it, where along them, and the next stop after it (to ask the API)
+for (const c of CAMS) {
+  c.watch = [];
+  for (const r of ROUTES) {
+    const pr = project(r, [c.lat, c.lon]); if (pr.off > NEAR) continue;
+    const next = r.stops.find(s => s.d > pr.d + 5); if (!next) continue;
+    c.watch.push({ r, d: pr.d, stop: next });
+  }
+  c.lines = [...new Set(c.watch.map(w => w.r.line))];
+}
+const cams = CAMS.filter(c => c.lines.length).sort((a, b) => b.lines.length - a.lines.length);
+
+// ---------- camera picture ----------
+let cam = cams[0], imgAt = 0, imgOk = null;
+try { const id = localStorage.getItem('camSel'); cam = cams.find(c => c.id === id) || cam; } catch (e) {}
+$('camSel').innerHTML = cams.map(c => `<option value="${c.id}">${c.nombre} · ${c.lines.length} liñas</option>`).join('');
+$('camSel').value = cam.id;
+$('camSel').onchange = () => { cam = cams.find(c => c.id === $('camSel').value); try { localStorage.setItem('camSel', cam.id); } catch (e) {} imgOk = null; showCam(true); poll(); };
+// The Concello serves the pictures over http only to Spain. On this https page the browser may refuse them:
+// then the picture opens in a tab of its own (http), with the same answers here.
+function showCam(fresh) {
+  const box = $('cam'), url = cam.url + (cam.url.includes('?') ? '&' : '?') + '_=' + Date.now();
+  if (imgOk === false) {
+    box.innerHTML = `<div class="fail"><p>O navegador non deixa ver a cámara dentro desta páxina (o Concello sérvea sen https).</p><a class="btn pri" href="${cam.url}" target="_blank" rel="noopener">Abrir a cámara</a><p class="muted">Ábrese noutra pestana: déixaa á beira e volve aquí para responder.</p></div>`;
+    return;
+  }
+  const img = new Image();
+  img.alt = 'Cámara de tráfico: ' + cam.nombre;
+  img.onload = () => { imgOk = true; imgAt = Date.now(); box.innerHTML = ''; box.append(img); const a = document.createElement('span'); a.className = 'age'; a.id = 'age'; box.append(a); tickAge(); };
+  img.onerror = () => { if (imgOk === null) { imgOk = false; showCam(); } };
+  img.src = url;
+  if (fresh) box.innerHTML = '<span class="muted">Cargando a cámara…</span>';
+  $('camInfo').textContent = `Liñas que pasan por diante: ${cam.lines.join(', ')}.`;
+}
+function tickAge() { const a = $('age'); if (a && imgAt) a.textContent = `Imaxe pedida hai ${Math.round((Date.now() - imgAt) / 1000)} s`; }
+setInterval(() => { if (imgOk) showCam(); }, 10000);
+setInterval(tickAge, 1000);
+
+// ---------- where the app says the buses are ----------
+let seen = [], polledAt = 0;
+async function fetchStop(id) {
+  const res = await fetch(API + id, { cache: 'no-store' });
+  return JSON.parse(new TextDecoder('iso-8859-1').decode(await res.arrayBuffer())).estimaciones || [];
+}
+async function poll() {
+  const my = cam, ids = [...new Set(my.watch.map(w => w.stop.id))], got = new Map();
+  await Promise.all(ids.map(async id => { try { got.set(id, await fetchStop(id)); } catch (e) {} }));
+  if (my !== cam) return;
+  const out = [];
+  for (const w of my.watch) for (const e of got.get(w.stop.id) || []) {
+    if (String(e.linea).trim() !== w.r.line || e.metros < 0) continue;
+    const along = w.stop.d - e.metros, dist = w.d - along;   // metres still to go to the camera (negative: gone past)
+    if (dist < -200 || dist > 1500) continue;
+    const v = e.minutos > 0 ? Math.min(Math.max(e.metros / (e.minutos * 60), 2), 12) : 4;
+    out.push({ key: `${w.r.line}|${w.r.head}|${Math.round(along / 50)}`, line: w.r.line, head: w.r.head, dist, v, stop: w.stop.id, min: e.minutos });
+  }
+  const seenKey = new Set(); seen = out.filter(b => !seenKey.has(b.key) && seenKey.add(b.key));
+  polledAt = Date.now(); render();
+}
+setInterval(poll, 15000);
+
+const answered = new Set();
+function render() {
+  const t = (Date.now() - polledAt) / 1000, list = seen.map(b => ({ ...b, now: b.dist - b.v * t })).sort((a, b) => Math.abs(a.now) - Math.abs(b.now));
+  if (!list.length) { $('buses').innerHTML = '<div class="empty">Ningún bus preto desta cámara agora. Proba con outra ou agarda un pouco.</div>'; return; }
+  $('buses').innerHTML = list.slice(0, 8).map(b => {
+    const inView = Math.abs(b.now) <= VIEW, secs = Math.round(Math.abs(b.now) / b.v);
+    const when = inView ? `Debería verse agora (a ${Math.round(Math.abs(b.now))} m)` : b.now > 0 ? `Chega á cámara en ${secs < 90 ? secs + ' s' : Math.round(secs / 60) + ' min'} (${Math.round(b.now)} m)` : `Pasou hai ${secs} s`;
+    const ask = inView && !answered.has(b.key) ? `<div class="ask"><button class="btn pri" data-a="si" data-k="${b.key}">Véxoo</button><button class="btn" data-a="non" data-k="${b.key}">Non o vexo</button><button class="btn" data-a="dubida" data-k="${b.key}">Non se ve ben</button></div>` : '';
+    return `<div class="bus${inView ? ' now' : ''}"><span class="b" style="background:${COLOR[b.line] || '#666'};color:${TEXT[b.line] || '#fff'}">${b.line}</span><div class="t"><b>${b.head}</b><span>${when}</span>${ask}</div></div>`;
+  }).join('');
+  $('buses').querySelectorAll('[data-a]').forEach(x => x.onclick = () => {
+    const b = list.find(y => y.key === x.dataset.k); if (!b) return;
+    answered.add(b.key);
+    log.push({ t: new Date().toISOString(), cam: cam.id, camName: cam.nombre, line: b.line, head: b.head, dist: Math.round(b.now), apiMin: b.min, stop: b.stop, img: imgOk ? Math.round((Date.now() - imgAt) / 1000) : null, answer: x.dataset.a });
+    save(); render(); renderStats();
+  });
+}
+setInterval(render, 1000);
+
+// ---------- results ----------
+let log = []; try { log = JSON.parse(localStorage.getItem('camCheck') || '[]'); } catch (e) {}
+const save = () => { try { localStorage.setItem('camCheck', JSON.stringify(log)); } catch (e) {} };
+function renderStats() {
+  const si = log.filter(x => x.answer === 'si').length, non = log.filter(x => x.answer === 'non').length, d = log.length - si - non;
+  $('stats').innerHTML = `<div><b>${si}</b><span>visto</span></div><div><b>${non}</b><span>non estaba</span></div><div><b>${d}</b><span>dubidoso</span></div>`;
+  $('statsTxt').textContent = si + non ? `A app acertou no ${Math.round(100 * si / (si + non))} % das veces que se podía ver ben (${si + non} comprobacións).` : 'Aínda sen respostas.';
+}
+$('copy').onclick = async () => { const txt = JSON.stringify(log, null, 1); try { await navigator.clipboard.writeText(txt); $('copy').textContent = 'Copiado'; } catch (e) { prompt('Copia os resultados', txt); } setTimeout(() => { $('copy').textContent = 'Copiar os resultados'; }, 2000); };
+$('clear').onclick = () => { if (confirm('Borrar todas as respostas?')) { log = []; save(); renderStats(); } };
+
+showCam(true); poll(); renderStats();
+</script>
+</body>
+</html>
