@@ -19,3 +19,14 @@ Mapa en tiempo real de los autobuses urbanos de Vigo (Vitrasa).
 La posición de cada bus se calcula a partir de la distancia que da la API hasta cada parada, proyectada sobre el recorrido oficial: no es el GPS del vehículo.
 
 Proyecto personal, sin relación con Vitrasa ni con el Concello de Vigo.
+
+## Pruebas
+
+`tests/uso-real.js` usa la app como lo haría una persona con el móvil: primera visita, buscar y guardar paradas,
+mirar el mapa, tocar un bus, arrastrar y ampliar con el dedo, abrir una parada, volver otro día, Vitrasa sin datos,
+tema oscuro y ordenador. En cada pantalla revisa la accesibilidad (contraste WCAG AA, tamaño mínimo de letra, botones
+de al menos 24 px, nombres para lectores de pantalla) y que no se tapen los buses ni los nombres de las paradas.
+
+```
+cd tests && npm install && npm test        # capturas en tests/out/
+```

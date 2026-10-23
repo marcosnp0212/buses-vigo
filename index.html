@@ -24,13 +24,13 @@
 /* Buses Vigo, in the manner of Mini Metro: flat land and water, thick lines, stations as white shapes,
    almost no chrome. Colors are tokens; the theme is set on <html data-theme>. */
 :root {
-  --land: #f2efe8; --water: #c4dbe6; --panel: #f2efe8; --raise: #e7e2d7; --ink: #2b2d2f; --muted: #807c74; --rule: #dcd6ca;
-  --station: #ffffff; --live: #2f8f4e; --late: #b1521b; --early: #2f6fa8; --focus: #2f6fa8; --casing: #f2efe8; --bus-ring: #f2efe8;
+  --land: #f2efe8; --water: #c4dbe6; --panel: #f2efe8; --raise: #e7e2d7; --ink: #2b2d2f; --muted: #625e57; --rule: #dcd6ca;
+  --station: #ffffff; --live: #2f8f4e; --late: #a14915; --early: #2f6fa8; --focus: #2f6fa8; --casing: #f2efe8; --bus-ring: #f2efe8;
   --scrim: rgba(43, 45, 47, 0.32);
   --font: "Jost", "Futura", "Century Gothic", system-ui, sans-serif;
 }
 :root[data-theme="dark"] {
-  --land: #1f2830; --water: #141b21; --panel: #1f2830; --raise: #2a353e; --ink: #ece9e2; --muted: #8e979e; --rule: #34414b;
+  --land: #1f2830; --water: #141b21; --panel: #1f2830; --raise: #2a353e; --ink: #ece9e2; --muted: #a3abb1; --rule: #34414b;
   --station: #1f2830; --live: #5cc485; --late: #f0a35e; --early: #8cc2ee; --focus: #8cc2ee; --casing: #1f2830; --bus-ring: #1f2830;
   --scrim: rgba(0, 0, 0, 0.5); color-scheme: dark;
 }
@@ -50,7 +50,7 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 
 /* ---------- line badge: the line's colour, round like the game's palette ---------- */
 .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 34px; padding: 0 8px; border-radius: 17px; color: #fff; font: 600 14px/1 var(--font); flex: none; }
-.badge.s { min-width: 24px; height: 24px; font-size: 11.5px; padding: 0 6px; border-radius: 12px; }
+.badge.s { min-width: 24px; height: 24px; font-size: 12px; padding: 0 6px; border-radius: 12px; }
 
 /* ---------- top: the city and the clock ---------- */
 .top { position: fixed; z-index: 1000; left: max(20px, env(safe-area-inset-left)); right: max(20px, env(safe-area-inset-right)); top: calc(14px + env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
@@ -81,7 +81,7 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 .palette { flex: none; display: flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-top: 2px solid var(--rule); background: none; padding: 12px 16px 14px; }
 .palette .sw { display: flex; gap: 9px; }
 .palette .sw i { width: 28px; height: 28px; border-radius: 14px; display: block; }
-.palette .sw i.more { border: 2.5px dashed var(--muted); font-style: normal; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--muted); }
+.palette .sw i.more { border: 2.5px dashed var(--muted); font-style: normal; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--muted); }
 .palette span:last-child { font-size: 14px; color: var(--muted); }
 
 /* ---------- departure rows ---------- */
@@ -122,7 +122,7 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 .add:hover { color: var(--ink); border-color: var(--muted); }
 
 /* star toggle */
-.star { width: 40px; height: 40px; flex: none; border: 0; border-radius: 20px; background: none; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
+.star { width: 44px; height: 44px; flex: none; border: 0; border-radius: 22px; background: none; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
 .star svg { width: 22px; height: 22px; }
 .star[aria-pressed="true"] { color: var(--ink); }
 .star[aria-pressed="true"] svg path { fill: var(--ink); }
@@ -174,7 +174,7 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 .sp-head .nm { flex: 1; min-width: 0; }
 .sp-head .nm b { display: block; font: 500 22px/1.15 var(--font); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .sp-head .meta { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 13px; margin-top: 4px; }
-.x { width: 40px; height: 40px; border: 2.5px solid var(--ink); background: none; border-radius: 50%; font-size: 14px; flex: none; }
+.x { width: 44px; height: 44px; border: 2.5px solid var(--ink); background: none; border-radius: 50%; font-size: 14px; flex: none; }
 #stopPanel .list { overflow: auto; overscroll-behavior: contain; margin-top: 4px; }
 .arr { display: block; width: 100%; padding: 10px 0 4px; border: 0; border-top: 2px solid var(--rule); background: none; text-align: left; }
 .arr:first-child { border-top: 0; }
@@ -211,7 +211,7 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 .field input { flex: 1; min-width: 0; height: 44px; border: 0; background: none; font-size: 16px; outline: none; }
 .field:focus-within { box-shadow: 0 0 0 2px var(--focus); }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-.chips .btn { min-height: 38px; font-size: 14.5px; padding: 0 14px; border-width: 2px; }
+.chips .btn { min-height: 44px; font-size: 14.5px; padding: 0 14px; border-width: 2px; }
 .results { overflow: auto; overscroll-behavior: contain; display: flex; flex-direction: column; margin: 0 -4px; }
 .results .hint { font-size: 13.5px; color: var(--muted); padding: 2px 4px 6px; }
 .res { display: flex; align-items: center; gap: 6px; border-top: 2px solid var(--rule); }
@@ -252,12 +252,13 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 
 /* ---------- markers ---------- */
 /* a bus: a small carriage in its line's colour with the line number, and a nose pointing where it goes */
-.car { position: relative; display: flex; align-items: center; justify-content: center; height: 22px; min-width: 32px; padding: 0 6px; border-radius: 5px; font: 600 12px/1 var(--font); color: #fff; border: 2px solid var(--bus-ring); }
-.car .nose { position: absolute; left: 50%; top: 50%; width: 80px; height: 80px; margin: -40px 0 0 -40px; overflow: visible; pointer-events: none; }
-.car .nose path { stroke: var(--bus-ring); stroke-width: 1.5; stroke-linejoin: round; }
-.car.mine { outline: 3px solid var(--ink); outline-offset: 1px; }
 .busp { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px 0 3px; height: 28px; border-radius: 6px; color: #fff; font: 600 14px/1 var(--font); border: 2px solid var(--bus-ring); white-space: nowrap; }
 .busp b { background: rgba(255,255,255,.24); border-radius: 4px; padding: 3px 6px; font-size: 13px; font-weight: 600; }
+.busp .bi { width: 15px; height: 15px; flex: none; fill: currentColor; margin-left: 3px; }
+.stn-lbl { position: absolute; left: 30px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 600 13px/1 var(--font); color: var(--ink);
+  text-shadow: 0 0 2px var(--land), 0 0 2px var(--land), 0 0 3px var(--land), 0 0 4px var(--land); pointer-events: none; }
+.stn-lbl.left { left: auto; right: 30px; }
+.stn-lbl[hidden] { display: none; }
 .busp.sel { outline: 3px solid var(--ink); outline-offset: 1px; }
 .busp.ghost { border-style: dashed; opacity: 0.92; }
 .busp .more { font-style: normal; margin-left: 2px; padding: 3px 6px; border-radius: 4px; background: var(--ink); color: var(--land); font-size: 12px; }
@@ -458,8 +459,22 @@ const otherRoute = r => ROUTES.find(x => x.line === r.line && x.dir !== r.dir &&
 const MAINS = ROUTES.filter(r => r.main);
 const stopName = id => (STOPS.get(id) || {}).name || `Parada ${id}`;
 const shortName = n => n.replace(/^(Rúa|Avda\.|Avenida|Praza|Estrada|Camiño)\s+(d[oae]s?\s+)?/i, '').replace(/\s*\(CUVI\)/, '');
-const textOn = hex => { const c = parseInt(hex.slice(1), 16), r = c >> 16, g = (c >> 8) & 255, b = c & 255; return (r * 299 + g * 587 + b * 114) / 1000 > 165 ? '#1f211d' : '#ffffff'; };
-const badge = (l, small) => `<span class="badge" style="background:${LINE_COLORS[l] || '#666'};color:${textOn(LINE_COLORS[l] || '#666')}${small ? ';height:18px;min-width:26px;font-size:10px;padding:0 6px' : ''}">${l}</span>`;
+// text on a line colour: white or near-black, whichever reads better (WCAG contrast)
+const lumOf = hex => { const c = parseInt(hex.slice(1), 16); return [c >> 16, (c >> 8) & 255, c & 255].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0); };
+const textOn = hex => { const l = lumOf(hex); return (l + 0.05) / (lumOf('#1f211d') + 0.05) > 1.05 / (l + 0.05) ? '#1f211d' : '#ffffff'; };
+// a line colour as the background of its number: if neither white nor black reads well enough on it (WCAG 4.5),
+// it gets a shade darker until white does. The lines on the map keep the real colour.
+const chipCache = new Map();
+function chip(hex) {
+  if (chipCache.has(hex)) return chipCache.get(hex);
+  let bg = hex, fg = textOn(hex);
+  const cr = (a, b) => { const x = lumOf(a), y = lumOf(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  for (let k = 0; cr(bg, fg) < 4.6 && k < 20; k++) {
+    const c = parseInt(bg.slice(1), 16); bg = '#' + [c >> 16, (c >> 8) & 255, c & 255].map(v => Math.round(v * 0.94).toString(16).padStart(2, '0')).join(''); fg = '#ffffff';
+  }
+  const out = { bg, fg }; chipCache.set(hex, out); return out;
+}
+const badge = (l, small) => `<span class="badge" style="background:${chip(LINE_COLORS[l] || '#666').bg};color:${chip(LINE_COLORS[l] || '#666').fg}${small ? ';height:20px;min-width:28px;font-size:12px;padding:0 6px' : ''}">${l}</span>`;
 
 // ---------- map ----------
 // ---------- theme: auto (system) / light / dark ----------
@@ -547,14 +562,12 @@ const segLines = new Map();   // bus id -> [{ line, ghost, weight }] for each st
 // Every few metres of each line shown, look for the other lines running along the same street (close and parallel).
 // The line takes its lane among them, counted from the side of the first line of that bundle, so two lines going
 // opposite ways also end up next to each other and not on top. Lanes change gently where the bundle changes.
-const MX = Math.cos(42.22 * Math.PI / 180) * 111320, MY = 110540, BUNDLE_PX = 30;
+const MX = Math.cos(42.22 * Math.PI / 180) * 111320, MY = 110540, BUNDLE_PX = 60;
 const lineWidthAt = z => z >= 15 ? 6 : z >= 13 ? 4.5 : 3;
 const lineWidth = () => lineWidthAt(map.getZoom());
-const bundleCache = new Map();
 function computeBundles(routes, z) {
-  const key = z + '|' + routes.map(r => r.id).join(',');
-  if (!bundleCache.has(key)) bundleCache.set(key, new Map(buildBundles(routes, z)));
-  for (const r of routes) r.bundle = bundleCache.get(key).get(r);
+  const B = routes.length > 1 && routes.length <= 30 ? new Map(buildBundles(routes, z)) : new Map();
+  for (const r of routes) r.bundle = B.get(r);
 }
 function buildBundles(routes, z) {
   const mpp = 156543 * Math.cos(42.22 * Math.PI / 180) / 2 ** z;
@@ -611,9 +624,11 @@ function buildBundles(routes, z) {
       slots[i] = (codes.indexOf(c) - (codes.length - 1) / 2) * (t[0] * ref[0] + t[1] * ref[1] >= 0 ? 1 : -1);
       ns[i] = codes.length;
     }
-    // ease the lane changes over ~80 m
-    const k = Math.max(1, Math.round(80 / step)), sm = a => a.map((_, i) => { let sum = 0, n = 0; for (let j = Math.max(0, i - k); j <= Math.min(N - 1, i + k); j++) { sum += a[j]; n++; } return sum / n; });
-    return [o.r, { ll: o.ll, d: o.d, slots: sm(Array.from(slots)), ns: sm(Array.from(ns)) }];
+    // ease the lane changes into a gentle S, some six lane widths long on screen
+    const k = Math.max(1, Math.round(Math.max(80, 6 * (lineWidthAt(z) + 1) * mpp) / step / 2));
+    const box = a => a.map((_, i) => { let sum = 0, n = 0; for (let j = Math.max(0, i - k); j <= Math.min(N - 1, i + k); j++) { sum += a[j]; n++; } return sum / n; });
+    const sm = a => box(box(Array.from(a)));
+    return [o.r, { ll: o.ll, d: o.d, slots: sm(slots), ns: sm(ns) }];
   });
 }
 // Douglas-Peucker: indices of the points to keep so the line stays within tol (same units as the points)
@@ -665,6 +680,31 @@ const OffsetLine = L.Polyline.extend({
     }));
   },
 });
+// Leaflet calls _project on every zoom: the rounding goes there too, so corners stay round at every zoom.
+const RoundLine = OffsetLine.extend({
+  _project() {
+    OffsetLine.prototype._project.call(this);
+    const R = this.options.round || 0; if (!R) return;
+    this._rings = this._rings.map(r => roundPx(r, R));
+  },
+});
+// A line as a transit map draws it: a point every 2 px, then averaged over ~R px either side.
+// Kinks and the GPS wobble go away and corners become curves of about that radius; the ends stay put.
+function roundPx(ring, R) {
+  if (ring.length < 3) return ring;
+  const P = [ring[0]];
+  for (let i = 1; i < ring.length; i++) {
+    const a = ring[i - 1], b = ring[i], n = Math.floor(Math.hypot(b.x - a.x, b.y - a.y) / 2);
+    for (let k = 1; k < n; k++) P.push(L.point(a.x + (b.x - a.x) * k / n, a.y + (b.y - a.y) * k / n));
+    P.push(b);
+  }
+  const w = Math.max(1, Math.round(R / 2)), pass = Q => Q.map((p, i) => {
+    const h = Math.min(w, i, Q.length - 1 - i); if (!h) return p;
+    let x = 0, y = 0; for (let j = i - h; j <= i + h; j++) { x += Q[j].x; y += Q[j].y; }
+    return L.point(x / (2 * h + 1), y / (2 * h + 1));
+  });
+  return pass(pass(P));
+}
 // the bundled points of a route between two distances along it
 function bundleSlice(r, d0, d1) {
   d0 = Math.max(0, d0); d1 = Math.min(r.length, d1); if (d1 <= d0) return { ll: [] };
@@ -676,44 +716,63 @@ function bundleSlice(r, d0, d1) {
   push(at(d0)); for (let i = 0; i < B.d.length; i++) if (B.d[i] > d0 && B.d[i] < d1) push([B.ll[i], B.slots[i], B.ns[i]]); push(at(d1));
   return out;
 }
-// where a bus is drawn: on its line's lane, not in the middle of the street
-function laneLatLng(r, d, ll) {
-  if (!r.bundle) return ll;
-  const one = bundleSlice(r, d, d + 1), slot = one.slots ? one.slots[0] : 0, n = one.ns ? one.ns[0] : 1; if (!slot) return ll;
-  const p = map.latLngToLayerPoint(ll), a = map.latLngToLayerPoint(pointAt(r, Math.max(0, d - 15))), b = map.latLngToLayerPoint(pointAt(r, Math.min(r.length, d + 15)));
-  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, o = slot * Math.min(lineWidth() + 1, BUNDLE_PX / Math.max(1, n));
-  return map.layerPointToLatLng(L.point(p.x - dy / len * o, p.y + dx / len * o));
+// where a bus is drawn: where its stretch starts on screen (its lane), not in the middle of the street
+function laneLatLng(b, ll) {
+  if (!b.laneShift) return ll;
+  return map.layerPointToLatLng(map.latLngToLayerPoint(ll).add(b.laneShift));
 }
+// the part of a route a bus still has to run, as a route of its own, so lanes are worked out only among what is drawn.
+// Its start moves in 40 m steps (the drawn line is trimmed to the bus), so lanes don't shift every second.
+function pieceOf(r, d0, d1) {
+  const base = Math.max(0, Math.floor(d0 / 40) * 40); d1 = Math.min(r.length, d1);
+  const coords = slice(r, base, d1); if (coords.length < 2) return null;
+  const cum = [0]; for (let i = 1; i < coords.length; i++) cum.push(cum[i - 1] + hav(coords[i - 1], coords[i]));
+  return { id: r.id + ':' + base + ':' + Math.round(d1), line: r.line, color: r.color, coords, cum, length: cum[cum.length - 1], from: d0 - base };
+}
+let pieceKey = '';
 function drawRoutes() {
-  const z = map.getZoom(), w = lineWidth();
-  const line = (pts, o) => new OffsetLine(pts.ll, { ...o, slots: pts.slots, ns: pts.ns, gap: o.weight + 0.8, interactive: false, renderer: canvas, lineJoin: 'round', lineCap: 'round', smoothFactor: 1 });
-  const whole = r => r.bundle ? r.bundle : { ll: r.coords };
+  const z = map.getZoom(), w = lineWidth(), R = Math.max(4, w * 1.5);
+  const line = (pts, o) => new RoundLine(pts.ll, { ...o, slots: pts.slots, ns: pts.ns, gap: o.weight + 2.5, round: R, interactive: false, renderer: canvas, lineJoin: 'round', lineCap: 'round', smoothFactor: 0 });
+  const land = getComputedStyle(document.documentElement).getPropertyValue('--land').trim() || '#f2efe8';
   // No whole lines by default: only the stretches still to run by the buses coming to your stops (or to the stop
-  // you opened), plus the one line you tapped. Lanes are worked out among everything drawn.
+  // you opened), plus the one line you tapped, faint underneath.
   const coming = mode === 'stop' || mine(), lit = highlight ? MAINS.filter(r => r.line === highlight) : [];
-  const shown = new Set(lit);
-  if (coming) for (const b of buses.values()) for (const r of (b.info.chain || [b.route])) shown.add(r);
-  const list = [...shown].sort((a, b) => a.id < b.id ? -1 : 1), key = [mode, dark, z, highlight, list.map(r => r.id)].join('|');
+  const key = [mode, dark, z, highlight].join('|');
   if (key !== routeKey) {
-    computeBundles(list, z); routeLayer.clearLayers();
-    for (const r of lit) line(whole(r), { color: r.color, weight: coming ? 3 : w, opacity: coming ? 0.5 : 1 }).addTo(routeLayer);
+    routeKey = key; routeLayer.clearLayers();
+    for (const r of lit) line({ ll: r.coords }, { color: r.color, weight: coming ? 3 : w, opacity: coming ? 0.45 : 1 }).addTo(routeLayer);
   }
-  // keep the full routes under the stops and the stretches to the stop
-  if (key !== routeKey) { routeKey = key; routeLayer.getLayers().reverse().forEach(l => l.bringToBack()); }
   const live = new Set(coming ? buses.keys() : []);
-  for (const [id, segs] of segLines) if (!live.has(id)) { for (const s of segs) segLayer.removeLayer(s.line); segLines.delete(id); }
+  const drop = s => { segLayer.removeLayer(s.line); if (s.casing) segLayer.removeLayer(s.casing); };
+  for (const [id, segs] of segLines) if (!live.has(id)) { segs.forEach(drop); segLines.delete(id); const b = buses.get(id); if (b) b.laneShift = null; }
+  // lanes among the stretches drawn
+  const pieces = new Map(), all = [];
+  for (const id of live) { const ps = (buses.get(id).toStop || []).map(([r, d0, d1]) => pieceOf(r, d0, d1)).filter(Boolean); pieces.set(id, ps); all.push(...ps); }
+  const pk = z + '|' + all.map(p => p.id).join(',');
+  if (pk !== pieceKey) { pieceKey = pk; computeBundles(all, z); }
+  else for (const [id, ps] of pieces) { const old = segLines.get(id) || []; ps.forEach((p, i) => { if (old[i] && old[i].piece && old[i].piece.id === p.id) p.bundle = old[i].piece.bundle; }); }
+  const many = new Set([...buses.values()].map(x => x.route.line)).size > 5;
   for (const id of live) {
-    const b = buses.get(id), want = (b.toStop || []).map(([r, d0, d1]) => bundleSlice(r, d0, d1)), have = segLines.get(id) || [];
-    const ghost = !!b.info.ghost, many = new Set([...buses.values()].map(x => x.route.line)).size > 5;
-    const style = { color: b.route.color, weight: (many ? Math.max(3, w * 0.6) : w) + (selectedBus === id ? 2 : 0), opacity: 1, dashArray: ghost ? '2 10' : null };
-    while (have.length > want.length) segLayer.removeLayer(have.pop().line);
-    want.forEach((pts, i) => {
+    const b = buses.get(id), ps = pieces.get(id), have = segLines.get(id) || [];
+    const ghost = !!b.info.ghost, weight = (many ? Math.max(3, w * 0.7) : w) + (selectedBus === id ? 2 : 0);
+    const style = { color: b.route.color, weight, opacity: 1, dashArray: ghost ? '1 9' : null };
+    while (have.length > ps.length) drop(have.pop());
+    ps.forEach((p, i) => {
+      const pts = bundleSlice(p, i === 0 ? p.from : 0, p.length);
       let s = have[i];
-      if (s && (s.ghost !== ghost || s.weight !== style.weight)) { segLayer.removeLayer(s.line); s = null; }
-      if (!s) { have[i] = { ghost, weight: style.weight, line: line(pts, style).addTo(segLayer) }; return; }
-      Object.assign(s.line.options, { slots: pts.slots, ns: pts.ns }); s.line.setLatLngs(pts.ll);
+      if (s && (s.ghost !== ghost || s.weight !== weight || s.dark !== dark)) { drop(s); s = null; }
+      if (!s) {
+        // a thin edge of the land colour around each line keeps lines that run side by side, or cross, apart
+        const casing = ghost ? null : line(pts, { color: land, weight: weight + 3, opacity: 1 }).addTo(segLayer);
+        s = have[i] = { ghost, weight, dark, casing, line: line(pts, style).addTo(segLayer) };
+      } else for (const l of [s.casing, s.line]) if (l) { Object.assign(l.options, { slots: pts.slots, ns: pts.ns }); l.setLatLngs(pts.ll); }
+      s.piece = p;
     });
     segLines.set(id, have);
+    // the marker sits where the line starts
+    const first = have[0] && have[0].line._rings && have[0].line._rings[0];
+    if (first && first.length && ps[0]) { const raw = map.latLngToLayerPoint(pointAt(ps[0], ps[0].from)); b.laneShift = first[0].subtract(raw); if (b.laneShift.distanceTo(L.point(0, 0)) > 30) b.laneShift = null; }
+    else b.laneShift = null;
   }
 }
 
@@ -728,11 +787,9 @@ const SHAPE_SVG = {
   diamond: poly(4, 10.5, -90), pentagon: poly(5, 9.8, -90), hexagon: poly(6, 9.5, 0), star: poly(5, 11, -90, 5),
   cross: '<path d="M10 4h6v6h6v6h-6v6h-6v-6H4v-6h6z"/>',
 };
-const SHAPES = ['square', 'triangle', 'diamond', 'pentagon', 'cross', 'hexagon'];
+// your stops are station rings with their name next to them; the destination of your trip is a star
 function shapeFor(id) {
-  const i = prefs.favs.indexOf(id);
-  if (i >= 0) return SHAPES[i % SHAPES.length];
-  return id === prefs.dest ? 'star' : id === prefs.origin ? 'circle' : null;
+  return id === prefs.dest ? 'star' : prefs.favs.includes(id) || id === prefs.origin ? 'circle' : null;
 }
 const shapeSvg = (shape, cls = 'shape') => shape ? `<svg class="${cls}" viewBox="0 0 26 26" aria-hidden="true">${SHAPE_SVG[shape]}</svg>` : '';
 const shapeLayer = L.layerGroup().addTo(map);
@@ -740,10 +797,25 @@ function drawShapes() {
   shapeLayer.clearLayers();
   for (const id of new Set([...prefs.favs, prefs.origin, prefs.dest])) {
     const s = STOPS.get(id); if (!s || id === focusStop) continue;
-    L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: shapeSvg(shapeFor(id), 'stn') }), zIndexOffset: 500, keyboard: false, title: s.name })
+    L.marker([s.lat, s.lon], { icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: shapeSvg(shapeFor(id), 'stn') + `<span class="stn-lbl">${shortName(s.name)}</span>` }), zIndexOffset: 500, keyboard: false, title: s.name })
       .on('click', () => enterStop(id)).addTo(shapeLayer);
   }
+  placeLabels();
 }
+// stop names go to the right of their ring, or to the left if that's taken; if both are, the name waits for more zoom
+function placeLabels() {
+  const marks = shapeLayer.getLayers(), boxes = marks.map(m => { const p = map.latLngToContainerPoint(m.getLatLng()); return [p.x - 13, p.y - 13, p.x + 13, p.y + 13]; });
+  const size = map.getSize(); boxes.push([size.x - 80, 0, size.x + 999, size.y], [-999, 0, 8, size.y]);   // the map buttons and the screen edges
+  const free = r => !boxes.some(b => r[0] < b[2] && r[2] > b[0] && r[1] < b[3] && r[3] > b[1]);
+  for (const m of marks) {
+    const lbl = m.getElement() && m.getElement().querySelector('.stn-lbl'); if (!lbl) continue;
+    const p = map.latLngToContainerPoint(m.getLatLng()), w = lbl.offsetWidth || 120;
+    const right = [p.x + 16, p.y - 9, p.x + 18 + w, p.y + 9], left = [p.x - 18 - w, p.y - 9, p.x - 16, p.y + 9];
+    const pick = free(right) ? right : free(left) ? left : null;
+    lbl.classList.toggle('left', pick === left); lbl.hidden = !pick; if (pick) boxes.push(pick);
+  }
+}
+map.on('zoomend moveend', placeLabels);
 for (const s of STOPS.values()) {
   const m = L.circleMarker([s.lat, s.lon], { ...stopStyle(s.id), renderer: canvas });
   m.on('click', () => enterStop(s.id));
@@ -767,7 +839,7 @@ function refreshStops() {
 }
 map.on('zoomend moveend', refreshStops);
 map.on('zoomend', () => { for (const m of stopMarkers.values()) m.setStyle(stopStyle()); });
-map.on('zoomend', () => { restyleBuses(); drawRoutes(); if (mode === 'stop') declutter(); });
+map.on('zoomend', () => { restyleBuses(); drawRoutes(); declutter(); });
 
 // ---------- line picker ----------
 function renderLinesPill() {
@@ -802,7 +874,7 @@ document.getElementById('picker').addEventListener('click', e => { if (e.target.
 // ---------- controls ----------
 document.getElementById('zin').onclick = () => map.zoomIn();
 document.getElementById('zout').onclick = () => map.zoomOut();
-document.getElementById('recenter').onclick = () => { follow = null; if (mode === 'stop') fitStop(); else if (hasTrip()) fitTrip(); else map.setView([42.22, -8.72], 13); };
+document.getElementById('recenter').onclick = () => { follow = null; if (mode === 'stop') fitStop(); else if (hasTrip()) fitTrip(); else if (mine()) fitMine(); else map.setView([42.22, -8.72], 13); };
 document.getElementById('locBtn').onclick = locate;
 renderThemeBtn();
 document.getElementById('tripPill').onclick = () => openEditor('origin');
@@ -818,17 +890,26 @@ function toast(msg) { const t = document.getElementById('toast'); t.textContent 
 // room the panels leave free on the map, for fitting things into view
 function mapPad(maxZoom) {
   const panel = document.getElementById(mode === 'stop' ? 'stopPanel' : 'sheet'), h = panel.hidden ? 0 : panel.getBoundingClientRect().height;
-  return innerWidth >= 820 ? { paddingTopLeft: [440, 40], paddingBottomRight: [80, 40], maxZoom } : { paddingTopLeft: [24, 80], paddingBottomRight: [60, h + 24], maxZoom };
+  return innerWidth >= 820 ? { paddingTopLeft: [440, 40], paddingBottomRight: [80, 40], maxZoom } : { paddingTopLeft: [24, 80], paddingBottomRight: [84, h + 24], maxZoom };
 }
 function fitTrip() {
   const o = STOPS.get(prefs.origin), d = STOPS.get(prefs.dest); if (!o || !d) return;
   map.fitBounds([[o.lat, o.lon], [d.lat, d.lon]], mapPad(16));
 }
+// your stops and the stretches of the buses coming to them, in the part of the map the panel leaves free.
+// Until you move the map yourself, it frames them again when the panel opens or closes, or when the first buses arrive.
+let userMoved = false, mineFitted = false;
+map.on('dragstart dblclick', () => { userMoved = true; });
+document.getElementById('map').addEventListener('touchstart', e => { if (e.touches.length > 1) userMoved = true; }, { passive: true });
+function fitMine() {
+  const pts = [...new Set([...prefs.favs, prefs.origin])].filter(id => STOPS.has(id)).map(id => { const s = STOPS.get(id); return [s.lat, s.lon]; });
+  for (const segs of segLines.values()) for (const s of segs) if (s.piece) pts.push(...s.piece.coords);
+  if (pts.length) { map.fitBounds(pts.length === 1 ? [pts[0], pts[0]] : pts, mapPad(16)); userMoved = false; }
+}
 // first view: the trip, else the saved stops, else the city
 function fitHome() {
   if (hasTrip()) return fitTrip();
-  const pts = prefs.favs.map(id => STOPS.get(id)).map(s => [s.lat, s.lon]);
-  if (pts.length) map.fitBounds(pts, mapPad(16));
+  fitMine();
 }
 let fitted = false;
 new ResizeObserver(() => { map.invalidateSize(); if (!fitted && map.getSize().x) { fitted = true; fitHome(); } }).observe(document.getElementById('map'));
@@ -930,32 +1011,27 @@ const SOON = 15, SHOWN = 5;
 const mine = () => mode === 'explore' && (prefs.favs.length > 0 || hasTrip());
 let highlight = null;   // the one line drawn whole, after tapping one of its buses
 function estimateMine() {
-  const stops = [...new Set([...prefs.favs, prefs.origin, prefs.dest])].filter(id => STOPS.has(id));
+  const stops = [...new Set([...prefs.favs, prefs.origin])].filter(id => STOPS.has(id));
   // the next arrivals at any of your stops, one bus per line and only a handful: what you would actually take
   const all = stops.flatMap(id => estimateStop(id)).filter(f => f.r && !f.ghost && f.min <= SOON && sel.has(f.line)).sort((a, b) => a.min - b.min);
   const seen = new Set();
   return all.filter(f => !seen.has(f.line) && seen.add(f.line)).slice(0, SHOWN);
 }
 const buses = new Map(); let nextId = 1, follow = null;
+// A bus on the map says what it is in words: a bus pictogram, its line and, when it is coming to your stop, how long it
+// takes ("3 min"). No arrows or shapes to decode. A bus with no live position (timetable only) has a dashed edge and "≈".
+const BUS_SVG = '<svg class="bi" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h8A2.5 2.5 0 0 1 14.5 4v8a1 1 0 0 1-1 1H13v1.2a.8.8 0 0 1-1.6 0V13H4.6v1.2a.8.8 0 0 1-1.6 0V13h-.5a1 1 0 0 1-1-1V4A2.5 2.5 0 0 1 4 1.5ZM3.5 4.2v3.6h9V4.2Zm1 6.3a1 1 0 1 0 0 .01Zm7 0a1 1 0 1 0 0 .01Z"/></svg>';
 function busIcon(b) {
-  const r = b.route, fg = textOn(r.color);
-  if (mode === 'stop') {
-    const L3 = (b.info.laps || [b.info.min]), t = L3.slice(0, 3).map(m => m <= 0 ? 'xa' : m + '′').join(' · ') + (L3.length > 3 ? ' …' : '');
-    const more = b.more ? `<i class="more">+${b.more}</i>` : '';
-    const html = b.info.ghost
-      ? `<div class="busp ghost${selectedBus === b.id ? ' sel' : ''}" style="border-color:${r.color};color:var(--ink);background:var(--sheet)"><b style="background:${r.color};color:${fg}">${r.line}</b>${t} prog.${more}</div>`
-      : `<div class="busp${selectedBus === b.id ? ' sel' : ''}" style="background:${r.color};color:${fg}"><b>${r.line}</b>${t}${more}</div>`;
-    // rough width of the pill, to tell which ones would cover each other
-    b.pillW = 34 + 7.5 * (r.line.length + t.length + (b.info.ghost ? 6 : 0)) + (b.more ? 30 : 0);
-    return L.divIcon({ className: '', iconSize: null, iconAnchor: [24, 14], html });
-  }
-  const mine = follow === b.id || (heroBus && heroBus.id === b.id);
-  const w = Math.max(32, 16 + 7.5 * r.line.length), a = (b.heading || 0) * Math.PI / 180;
-  // where the nose starts: the edge of the carriage in that direction
-  const h = Math.min(Math.abs(Math.cos(a)) > 0.01 ? w / 2 / Math.abs(Math.cos(a)) : 99, Math.abs(Math.sin(a)) > 0.01 ? 11 / Math.abs(Math.sin(a)) : 99) - 1;
-  const nose = b.heading === undefined ? '' : `<svg class="nose" viewBox="-40 -40 80 80" style="transform:rotate(${b.heading}deg)"><path d="M${(h + 8).toFixed(1)} 0L${h.toFixed(1)} -6.5V6.5Z" fill="${r.color}"/></svg>`;
-  return L.divIcon({ className: '', iconSize: [w, 22], iconAnchor: [w / 2, 11],
-    html: `<div class="car${mine ? ' mine' : ''}" style="background:${r.color};color:${fg};min-width:${w}px">${nose}${r.line}</div>` });
+  const r = b.route, { bg, fg } = chip(r.color), ghost = !!b.info.ghost, m = b.info.min;
+  const sel = selectedBus === b.id || follow === b.id || (heroBus && heroBus.id === b.id);
+  const when = mode === 'stop' || mine() ? (m <= 0 ? 'chegando' : (ghost ? '≈' : '') + m + ' min') : '';
+  const label = `Bus ${r.line}` + (when ? (m <= 0 ? ', chegando á parada' : `, chega en ${m} minutos`) + (ghost ? ' segundo o horario' : '') : '');
+  const more = b.more ? `<i class="more">+${b.more}</i>` : '';
+  const html = `<div class="busp${ghost ? ' ghost' : ''}${sel ? ' sel' : ''}" role="img" aria-label="${label}" title="${label}" style="${ghost ? `border-color:${r.color};color:var(--ink);background:var(--sheet)` : `background:${bg};color:${fg}`}">`
+    + `${BUS_SVG}<b${ghost ? ` style="background:${bg};color:${fg}"` : ''}>${r.line}</b>${when ? `<span>${when}</span>` : ''}${more}</div>`;
+  // rough width of the pill, to tell which ones would cover each other
+  b.pillW = 40 + 7.5 * (r.line.length + when.length) + (b.more ? 30 : 0);
+  return L.divIcon({ className: '', iconSize: null, iconAnchor: [14, 15], html });
 }
 // Each bus marker is its own DOM layer, so: rebuild its icon only when it looks different,
 // keep off-screen buses off the map, and only move a marker when it moves at least half a pixel.
@@ -987,15 +1063,15 @@ function dropBus(b) { map.removeLayer(b.marker); if (b.dot) map.removeLayer(b.do
 function setHighlight(line) { if (highlight === line) return; highlight = line; drawRoutes(); refreshStops(); }
 map.on('click', () => { if (highlight && mode === 'explore') { busCardId = null; renderBusCard(); setHighlight(null); } });
 function clearBuses() { for (const b of buses.values()) dropBus(b); buses.clear(); follow = null; selectedBus = null; }
-// Stop mode: pills that would cover each other fold into the one that arrives first, which shows "+N".
+// Buses coming to a stop: pills that would cover each other fold into the one that arrives first, which shows "+N".
 function declutter() {
   const list = [...buses.values()];
-  if (mode !== 'stop') { for (const b of list) if (b.hidden || b.more) { b.hidden = false; b.more = 0; b.members = null; setBusIcon(b); } return; }
+  if (mode !== 'stop' && !mine()) { for (const b of list) if (b.hidden || b.more) { b.hidden = false; b.more = 0; b.members = null; setBusIcon(b); } return; }
   list.sort((a, b) => (b.id === selectedBus) - (a.id === selectedBus) || a.info.min - b.info.min);
   const leads = [];
   for (const b of list) {
     const p = map.latLngToLayerPoint(b.marker.getLatLng()), w = b.pillW || 80;
-    const box = { x1: p.x - 24, x2: p.x - 24 + w, y1: p.y - 16, y2: p.y + 16 };
+    const box = { x1: p.x - 14, x2: p.x - 14 + w, y1: p.y - 16, y2: p.y + 16 };
     const lead = leads.find(l => box.x1 < l.box.x2 && box.x2 > l.box.x1 && box.y1 < l.box.y2 && box.y2 > l.box.y1);
     if (lead) { b.hidden = true; lead.members.push(b); } else { b.hidden = false; leads.push({ b, box, members: [] }); }
   }
@@ -1049,16 +1125,11 @@ setInterval(() => {
   for (const b of buses.values()) {
     const cap = (mode === 'stop' || mine()) && b.info.base === b.route && (b.info.chain || []).length <= 1 ? b.route.stopById.get(b.info.stop).d : b.route.length;
     b.shown = Math.max(b.shown, Math.min(b.shown + b.v * dt, b.fix + 1500, cap));
-    const ll = L.latLng(laneLatLng(b.route, b.shown, L.latLng(pointAt(b.route, b.shown))));
+    const ll = L.latLng(laneLatLng(b, L.latLng(pointAt(b.route, b.shown))));
     if (b.onMap || b.dotOn) {
       const p = map.latLngToLayerPoint(ll), q = b.px;
       if (q && Math.abs(p.x - q.x) < 0.5 && Math.abs(p.y - q.y) < 0.5) { b.marker._latlng = ll; continue; }
       b.px = p;
-      // which way it goes, in steps of 45°: the icon only changes when the direction does
-      if (b.onMap && mode === 'explore') {
-        const a = map.latLngToLayerPoint(pointAt(b.route, Math.min(b.shown + 40, b.route.length))), deg = Math.round(Math.atan2(a.y - p.y, a.x - p.x) * 180 / Math.PI / 45) * 45;
-        if (deg !== b.heading && (a.x !== p.x || a.y !== p.y)) { b.heading = deg; setBusIcon(b); }
-      }
     }
     placeBus(b, ll);
   }
@@ -1223,6 +1294,7 @@ async function tick() {
       updateBuses(estimateMine(), pollMs);
       for (const b of buses.values()) b.toStop = toStop(b);
       drawRoutes(); refreshStops(); renderHero(); renderBusCard();
+      if (!mineFitted && !userMoved && !hasTrip()) { mineFitted = true; fitMine(); }
     } else { updateBuses(estimateExplore(), pollMs); renderHero(); renderBusCard(); }
     renderHome();
   } catch (e) { if (!lastErr) { lastErr = true; renderHome(); } renderFresh(); }
@@ -1286,7 +1358,7 @@ function toggleFav(id) {
   savePrefs(); toast(adding ? `${shortName(stopName(id))} gardada nas miñas paradas` : `${shortName(stopName(id))} quitada das miñas paradas`);
   if (adding && !results.has(id)) fetchStop(id).then(l => { results.set(id, l); renderHome(); }, () => {});
   refreshAutoLines(); renderHome(); drawShapes(); refreshStops();
-  if (mode === 'explore') restartPolling(true);   // the stops watched (and so the buses drawn) changed
+  if (mode === 'explore') { mineFitted = false; restartPolling(true); }   // the stops watched (and so the buses drawn) changed
 }
 function renderHome() {
   const box = document.getElementById('favs'), has = prefs.favs.length > 0, trip = !!(prefs.origin || prefs.dest);
@@ -1323,6 +1395,7 @@ function setSheet(min) {
   const el = document.getElementById('sheet'); el.classList.toggle('min', min);
   document.getElementById('sheetGrab').setAttribute('aria-expanded', String(!min));
   prefs.sheetMin = min; savePrefs();
+  if (mode === 'explore' && !userMoved && !hasTrip() && mine()) setTimeout(fitMine, 320);   // after the panel has slid
 }
 document.getElementById('sheetGrab').onclick = () => setSheet(!document.getElementById('sheet').classList.contains('min'));
 
