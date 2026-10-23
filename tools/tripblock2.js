@@ -33,6 +33,28 @@ function schedule(stop, line, from, toMin) {
   }
   return out.sort((a, b) => a.t - b.t);
 }
+// Vitrasa splits some trips in two at a terminus: the A reaches "Universidade." and a minute later leaves Enxeñeiros,
+// two metres away, as another trip that goes round the campus. Same line, same spot, within a few minutes: same bus.
+const CONT = new Map();
+function continuations(pi) {
+  if (!CONT.has(pi)) {
+    const P = SCHED.patterns[pi], end = STOPS.get(P.stops[P.stops.length - 1]), near = id => { const s = STOPS.get(id); return s && end && hav([s.lat, s.lon], [end.lat, end.lon]) < 80; };
+    CONT.set(pi, SCHED.patterns.map((Q, qi) => qi).filter(qi => qi !== pi && SCHED.patterns[qi].line === P.line && near(SCHED.patterns[qi].stops[0])));
+  }
+  return CONT.get(pi);
+}
+// when a trip that passed 'pos' of pattern 'pi' at 'passT' gets to 'stop' (following its continuation if it ends before), or null
+function arrivalAt(pi, pos, passT, stop) {
+  const P = SCHED.patterns[pi], j = P.stops.indexOf(stop, pos + 1);
+  if (j >= 0) return new Date(passT.getTime() + (P.off[j] - P.off[pos]) * 60000);
+  const endT = new Date(passT.getTime() + (P.off[P.off.length - 1] - P.off[pos]) * 60000);
+  const day = new Date(endT); day.setHours(0, 0, 0, 0); const key = serviceKey(day), endMin = Math.round((endT - day) / 60000);
+  for (const qi of continuations(pi)) {
+    const k = SCHED.patterns[qi].stops.indexOf(stop); if (k < 0) continue;
+    for (const [start, svc] of TRIPS_BY_PAT[qi]) if (SVC[svc].has(key) && start >= endMin && start <= endMin + 6) return new Date(day.getTime() + (start + SCHED.patterns[qi].off[k]) * 60000);
+  }
+  return null;
+}
 const sameRuta = (a, b) => a.replace(/\W/g, '').toLowerCase() === b.replace(/\W/g, '').toLowerCase();
 function delayFor(line, ruta, min) {
   const now = new Date(), pred = new Date(now.getTime() + min * 60000);
@@ -48,9 +70,8 @@ function rutaReachesDest(line, ruta, passT) {
   if (c.some(x => sameRuta(x.ruta, ruta))) c = c.filter(x => sameRuta(x.ruta, ruta));
   const x = c.sort((a, b) => Math.abs(a.t - passT) - Math.abs(b.t - passT))[0];
   if (!x) return null;
-  const P = SCHED.patterns[x.pi], j = P.stops.indexOf(prefs.dest, x.pos + 1);
-  if (j < 0) return null;
-  return { t: new Date(x.t.getTime() + (P.off[j] - P.off[x.pos]) * 60000) };
+  const t = arrivalAt(x.pi, x.pos, x.t, prefs.dest);
+  return t ? { t } : null;
 }
 const hasSchedule = (stop, line) => (STOPIDX.get(stop) || []).some(([pi]) => SCHED.patterns[pi].line === line);
 function trips() {

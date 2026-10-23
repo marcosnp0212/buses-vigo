@@ -1,0 +1,23 @@
+name: Comprobar API de tempo real
+
+# Pregunta á API do Concello por varias paradas e di se responde e con que datos.
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/api-check.yml']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consultar paradas
+        run: |
+          for id in 14224 6620 8700 14264; do
+            echo "=== parada $id"
+            code=$(curl -s -o r.json -w '%{http_code} %{time_total}s' --max-time 20 "https://datos.vigo.org/vci_api_app/api2.jsp?ttl=5&tipo=TRANSPORTE-ESTIMACION-PARADA&id=$id" || echo "fallo")
+            echo "HTTP $code"
+            iconv -f iso-8859-1 -t utf-8 r.json 2>/dev/null | head -c 600; echo
+          done
+      - name: Comprobar GTFS
+        run: curl -sS -o /dev/null -w 'GTFS HTTP %{http_code}, %{size_download} bytes\n' --max-time 60 https://datos.vigo.org/data/transporte/gtfs_vigo.zip
