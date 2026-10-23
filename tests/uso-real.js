@@ -193,6 +193,18 @@ async function newPhone(browser, { dark = false, desktop = false, state } = {}) 
   await tap(page, page.locator('.fav-open').first()); await pause(page, 2500);
   check('7. parada: panel aberto con chegadas', await page.locator('#stopPanel').isVisible() && await page.locator('#stopPanel').getByText('min').first().isVisible());
   await screenCheck(page, '7. parada', '07-parada');
+  // baixa o panel da parada co dedo para ver o mapa, e vólveo subir
+  { const h = await page.locator('#stopPanel .sp-head').boundingBox();
+    await drag(page, h.x + h.width / 2, h.y + 10, 0, 160);
+    const folded = await page.evaluate(() => { const l = document.querySelector('#stopPanel .list'); return document.getElementById('stopPanel').classList.contains('min') && (!l || !l.offsetHeight); });
+    check('7. arrastrar a parada cara abaixo prégaa e deixa ver o mapa', folded);
+    await screenCheck(page, '7. parada pregada', '07b-parada-pregada');
+    const h2 = await page.locator('#stopPanel .sp-head').boundingBox();
+    await drag(page, h2.x + h2.width / 2, h2.y + 10, 0, -160);
+    check('7. arrastrar cara arriba vólvea abrir', !(await page.evaluate(() => document.getElementById('stopPanel').classList.contains('min'))));
+    await tap(page, page.locator('#stopPanel .sp-grab'));
+    check('7. tocar a asa tamén a prega', await page.evaluate(() => document.getElementById('stopPanel').classList.contains('min')));
+    await tap(page, page.locator('#stopPanel .sp-grab')); }
   await tap(page, page.locator('#spClose'));
   check('7. pechar a parada volve ao inicio', !(await page.locator('#stopPanel').isVisible()));
 

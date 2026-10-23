@@ -928,6 +928,7 @@ map.on('dragstart', () => { if (follow) { follow = null; if (mode === 'explore')
 function enterStop(id) {
   if (mode !== 'stop') clearBuses();
   mode = 'stop'; focusStop = id; selectedBus = null; highlight = null;
+  document.getElementById('stopPanel').classList.remove('min');
   clearBuses();
   document.getElementById('sheet').hidden = true;
   document.getElementById('busCard').hidden = true;
@@ -1003,11 +1004,13 @@ function renderStopPanel(loading) {
     }).join('');
   }
   const fav = prefs.favs.includes(s.id);
-  el.innerHTML = `<div class="sp-head">${shapeSvg(shapeFor(s.id) || 'circle')}<div class="nm"><b>${s.name}</b><div class="meta">Parada ${s.id}, ${s.lines.size} liñas</div></div>
+  const folded = el.classList.contains('min');
+  el.innerHTML = `<button class="sp-grab" aria-expanded="${!folded}" aria-label="${folded ? 'Amosar os buses da parada' : 'Baixar o panel para ver o mapa'}"></button><div class="sp-head">${shapeSvg(shapeFor(s.id) || 'circle')}<div class="nm"><b>${s.name}</b><div class="meta">Parada ${s.id}, ${s.lines.size} liñas</div></div>
       <button class="star" id="spShare" aria-label="Compartir esta parada" title="Compartir esta parada">${SHARE}</button><button class="star" id="spStar" aria-pressed="${fav}" aria-label="${fav ? 'Quitar das miñas paradas' : 'Gardar nas miñas paradas'}" title="${fav ? 'Quitar das miñas paradas' : 'Gardar nas miñas paradas'}">${STAR}</button><button class="x" id="spClose" aria-label="Pechar a parada">✕</button></div>
     <div class="list">${rows}</div>
     <div class="stopacts"><button class="btn" id="spOrig">Subo aquí</button><button class="btn" id="spDest">Baixo aquí</button><button class="btn" id="spFit">Ver os buses</button></div>`;
   el.querySelector('#spClose').onclick = exitStop;
+  el.querySelector('.sp-grab').onclick = () => setStopMin(!el.classList.contains('min'));
   el.querySelector('#spFit').onclick = fitStop;
   el.querySelector('#spStar').onclick = () => { toggleFav(s.id); renderStopPanel(); };
   el.querySelector('#spShare').onclick = () => shareStop(s);
@@ -1184,6 +1187,21 @@ function setSheet(min) {
   if (mode === 'explore' && !userMoved && !hasTrip() && mine()) setTimeout(fitMine, 320);   // after the panel has slid
 }
 document.getElementById('sheetGrab').onclick = () => setSheet(!document.getElementById('sheet').classList.contains('min'));
+// the stop panel folds down to its name too, so the buses on the map can be seen
+function setStopMin(min) {
+  const el = document.getElementById('stopPanel'); el.classList.toggle('min', min);
+  const g = el.querySelector('.sp-grab');
+  if (g) { g.setAttribute('aria-expanded', String(!min)); g.setAttribute('aria-label', min ? 'Amosar os buses da parada' : 'Baixar o panel para ver o mapa'); }
+}
+// on the phone both panels also fold with the finger: drag the top down to fold, up to unfold
+function swipeToFold(el, handle, setMin) {
+  let y0 = null;
+  el.addEventListener('touchstart', e => { y0 = e.touches.length === 1 && e.target.closest(handle) ? e.touches[0].clientY : null; }, { passive: true });
+  el.addEventListener('touchmove', e => { if (y0 === null) return; const dy = e.touches[0].clientY - y0; if (Math.abs(dy) > 36) { setMin(dy > 0); y0 = null; } }, { passive: true });
+  el.addEventListener('touchend', () => { y0 = null; }, { passive: true });
+}
+swipeToFold(document.getElementById('sheet'), '.grab', setSheet);
+swipeToFold(document.getElementById('stopPanel'), '.sp-grab, .sp-head', setStopMin);
 
 // ---------- links to a stop: ?parada=6620 ----------
 const stopUrl = id => location.origin + location.pathname + '?parada=' + id;
