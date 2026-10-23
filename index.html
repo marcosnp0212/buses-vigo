@@ -937,9 +937,15 @@ let userMoved = false, mineFitted = false;
 map.on('dragstart dblclick', () => { userMoved = true; });
 document.getElementById('map').addEventListener('touchstart', e => { if (e.touches.length > 1) userMoved = true; }, { passive: true });
 function fitMine() {
-  const pts = [...new Set([...prefs.favs, prefs.origin])].filter(id => STOPS.has(id)).map(id => { const s = STOPS.get(id); return [s.lat, s.lon]; });
-  for (const segs of segLines.values()) for (const s of segs) if (s.piece) pts.push(...s.piece.coords);
-  if (pts.length) { map.fitBounds(pts.length === 1 ? [pts[0], pts[0]] : pts, mapPad(16)); userMoved = false; }
+  const stops = [...new Set([...prefs.favs, prefs.origin])].filter(id => STOPS.has(id)).map(id => { const s = STOPS.get(id); return [s.lat, s.lon]; });
+  const pts = [...stops];
+  for (const b of buses.values()) if (b.toStop && b.toStop.length) { const ll = b.marker.getLatLng(); pts.push([ll.lat, ll.lng]); }
+  if (!pts.length) return;
+  const fit = P => map.fitBounds(P.length === 1 ? [P[0], P[0]] : P, mapPad(16));
+  fit(pts);
+  // never the whole ría because of one far bus: then just your stops (that bus is still on the list)
+  if (map.getZoom() < 13 && stops.length) { fit(stops); if (map.getZoom() < 13) map.setZoom(13); }
+  userMoved = false;
 }
 // first view: the trip, else the saved stops, else the city
 function fitHome() {
@@ -1293,10 +1299,13 @@ function sampleStops() {
   return set;
 }
 let tickT, pollMs = 20000, firstStopFit = false, lastFetch = null;
-function restartPolling(now) { clearTimeout(tickT); if (now) { firstStopFit = mode === 'stop'; tick(); } else tickT = setTimeout(tick, pollMs); }
+// Each round belongs to one generation: a restart (a stop saved, the mode changed) leaves any round still in flight
+// without a say, so its answers can't overwrite the new ones nor start a second polling loop.
+let pollGen = 0;
+function restartPolling(now) { pollGen++; clearTimeout(tickT); if (now) { firstStopFit = mode === 'stop'; tick(); } else tickT = setTimeout(tick, pollMs); }
 async function tick() {
   clearTimeout(tickT);
-  const myMode = mode, myStop = focusStop;
+  const myMode = mode, myStop = focusStop, gen = pollGen;
   let ids;
   if (mode === 'stop') { ids = [focusStop, prefs.origin, prefs.dest, ...prefs.favs]; pollMs = STOP_POLL_MS; }
   else if (mine()) { ids = [prefs.origin, prefs.dest, ...prefs.favs]; pollMs = STOP_POLL_MS; }
@@ -1305,7 +1314,7 @@ async function tick() {
   // a full round is a couple hundred requests: with nothing on the map yet, show buses as the answers come in
   let lastPart = performance.now();
   const onPart = mode === 'explore' && !mine() && !buses.size ? part => {
-    const t = performance.now(); if (t - lastPart < 700 || myMode !== mode) return; lastPart = t;
+    const t = performance.now(); if (t - lastPart < 700 || myMode !== mode || gen !== pollGen) return; lastPart = t;
     results = new Map(part); updateBuses(estimateExplore(), pollMs);
     if (!hasTrip() || results.has(prefs.origin)) renderHero();
     renderHome();
@@ -1316,6 +1325,7 @@ async function tick() {
     // refresh as often as the network allows: never faster than 15 s, and leave the API time to breathe
     if (mode === 'explore' && !mine()) pollMs = Math.round(Math.min(45000, Math.max(15000, (performance.now() - t0) * 3)));
     lastFetch = { stops: ids.length, ms: Math.round(performance.now() - t0) };
+    if (gen !== pollGen) return;   // restarted while we were fetching: the new round is in charge
     if (myMode !== mode || myStop !== focusStop) return;   // mode changed while we were fetching
     const ok = [...r.values()].filter(Boolean).length;
     results = r; if (ok) lastOk = Date.now();   // nothing answered: no stale minutes, the home falls back to the timetable
@@ -1334,8 +1344,8 @@ async function tick() {
       if (!mineFitted && !userMoved && !hasTrip()) { mineFitted = true; fitMine(); }
     } else { updateBuses(estimateExplore(), pollMs); renderHero(); renderBusCard(); }
     renderHome();
-  } catch (e) { if (!lastErr) { lastErr = true; renderHome(); } renderFresh(); }
-  if (!document.hidden) tickT = setTimeout(tick, pollMs);
+  } catch (e) { if (gen !== pollGen) return; if (!lastErr) { lastErr = true; renderHome(); } renderFresh(); }
+  if (!document.hidden && gen === pollGen) tickT = setTimeout(tick, pollMs);
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) clearTimeout(tickT); else tick(); });
 // how fresh the data is, in words
