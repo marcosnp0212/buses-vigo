@@ -2,7 +2,7 @@
    almost no chrome. Colors are tokens; the theme is set on <html data-theme>. */
 :root {
   --land: #f2efe8; --water: #c4dbe6; --panel: #f2efe8; --raise: #e7e2d7; --ink: #2b2d2f; --muted: #625e57; --rule: #dcd6ca;
-  --station: #ffffff; --live: #2f8f4e; --late: #a14915; --early: #2f6fa8; --focus: #2f6fa8; --casing: #f2efe8; --bus-ring: #f2efe8;
+  --station: #ffffff; --live: #1f6f3a; --late: #a14915; --early: #2f6fa8; --focus: #2f6fa8; --casing: #f2efe8; --bus-ring: #f2efe8;
   --scrim: rgba(43, 45, 47, 0.32);
   --font: "Jost", "Futura", "Century Gothic", system-ui, sans-serif;
 }

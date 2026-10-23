@@ -21,6 +21,18 @@ jobs:
       - name: Proba
         working-directory: tests
         run: REAL=1 node uso-real.js
+      - name: Capturas no rexistro (pequenas, para revisalas sen descargar o artefacto)
+        if: always()
+        run: |
+          pip install --quiet pillow
+          python3 - <<'PY'
+          import glob, base64, io
+          from PIL import Image
+          for f in sorted(glob.glob('tests/out/*.png')):
+              im = Image.open(f).convert('RGB'); im.thumbnail((420, 900))
+              b = io.BytesIO(); im.save(b, 'JPEG', quality=62)
+              print('IMG', f.split('/')[-1], base64.b64encode(b.getvalue()).decode())
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: capturas, path: tests/out/, retention-days: 7 }

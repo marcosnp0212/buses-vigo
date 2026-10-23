@@ -25,7 +25,7 @@
    almost no chrome. Colors are tokens; the theme is set on <html data-theme>. */
 :root {
   --land: #f2efe8; --water: #c4dbe6; --panel: #f2efe8; --raise: #e7e2d7; --ink: #2b2d2f; --muted: #625e57; --rule: #dcd6ca;
-  --station: #ffffff; --live: #2f8f4e; --late: #a14915; --early: #2f6fa8; --focus: #2f6fa8; --casing: #f2efe8; --bus-ring: #f2efe8;
+  --station: #ffffff; --live: #1f6f3a; --late: #a14915; --early: #2f6fa8; --focus: #2f6fa8; --casing: #f2efe8; --bus-ring: #f2efe8;
   --scrim: rgba(43, 45, 47, 0.32);
   --font: "Jost", "Futura", "Century Gothic", system-ui, sans-serif;
 }
@@ -1076,7 +1076,7 @@ function setBusIcon(b) {
 }
 // With the whole city in view there can be 200+ buses: there they are plain dots, not DOM markers. They share the canvas
 // of routes and stops: a canvas of their own on top would swallow the taps meant for the stops.
-const useDots = () => mode === 'explore' && (map.getZoom() <= 12 || (map.getZoom() === 13 && buses.size > 60));
+const useDots = () => mode === 'explore' && !mine() && (map.getZoom() <= 14 || (map.getZoom() === 15 && buses.size > 60));
 const dotStyle = b => ({ radius: map.getZoom() <= 12 ? 4.5 : 6, color: dark ? '#0f171c' : '#ffffff', weight: 1.5, fillColor: b.route.color, fillOpacity: 1, renderer: canvas });
 let viewBounds = null;
 function placeBus(b, ll) {
@@ -1101,7 +1101,7 @@ function clearBuses() { for (const b of buses.values()) dropBus(b); buses.clear(
 // Buses coming to a stop: pills that would cover each other fold into the one that arrives first, which shows "+N".
 function declutter() {
   const list = [...buses.values()];
-  if (mode !== 'stop' && !mine()) { for (const b of list) if (b.hidden || b.more) { b.hidden = false; b.more = 0; b.members = null; setBusIcon(b); } return; }
+  if (useDots()) { for (const b of list) if (b.hidden || b.more) { b.hidden = false; b.more = 0; b.members = null; setBusIcon(b); } return; }
   list.sort((a, b) => (b.id === selectedBus) - (a.id === selectedBus) || a.info.min - b.info.min);
   const leads = [];
   for (const b of list) {
@@ -1146,7 +1146,9 @@ function updateBuses(found, pollMs) {
 }
 function restyleBuses() { for (const b of buses.values()) setBusIcon(b); }
 function segmentsToStop(b) { // stretch from the bus to the focused stop (possibly across the end of the other direction), as [route, from, to]
-  const base = b.info.base || b.route, sd = base.stopById.get(b.info.stop).d, chain = b.info.chain || [base];
+  // a bus still carrying what the city view knew about it (no stop yet) has no stretch to draw
+  const base = b.info.base || b.route, st = b.info.stop && base.stopById.get(b.info.stop); if (!st) return [];
+  const sd = st.d, chain = b.info.chain || [base];
   if (chain.length === 1) return [[base, b.shown, sd]];
   return chain.map((r, i) => i === 0 ? [r, b.shown, r.length] : i === chain.length - 1 ? [r, 0, sd] : [r, 0, r.length]);
 }
@@ -1158,7 +1160,7 @@ setInterval(() => {
   const now = performance.now(), dt = Math.min((now - lastFrame) / 1000, 30); lastFrame = now;
   viewBounds = map.getBounds().pad(0.15);
   for (const b of buses.values()) {
-    const cap = (mode === 'stop' || mine()) && b.info.base === b.route && (b.info.chain || []).length <= 1 ? b.route.stopById.get(b.info.stop).d : b.route.length;
+    const st = (mode === 'stop' || mine()) && b.info.base === b.route && (b.info.chain || []).length <= 1 && b.route.stopById.get(b.info.stop), cap = st ? st.d : b.route.length;
     b.shown = Math.max(b.shown, Math.min(b.shown + b.v * dt, b.fix + 1500, cap));
     const ll = L.latLng(laneLatLng(b, L.latLng(pointAt(b.route, b.shown))));
     if (b.onMap || b.dotOn) {
@@ -1168,7 +1170,7 @@ setInterval(() => {
     }
     placeBus(b, ll);
   }
-  if ((mode === 'stop' || mine()) && now - lastSeg > 1000) { lastSeg = now; for (const b of buses.values()) b.toStop = toStop(b); drawRoutes(); declutter(); }
+  if (now - lastSeg > 1000) { lastSeg = now; if (mode === 'stop' || mine()) { for (const b of buses.values()) b.toStop = toStop(b); drawRoutes(); } declutter(); }
   // panning every tick, even by zero pixels, fires moveend and redraws the whole map; only pan when the bus has moved
   if (follow && buses.has(follow)) {
     const p = map.latLngToContainerPoint(buses.get(follow).marker.getLatLng()), c = map.getSize().divideBy(2);

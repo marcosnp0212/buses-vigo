@@ -139,8 +139,8 @@ async function newPhone(browser, { dark = false, desktop = false, state } = {}) 
   await tap(page, second.locator('[data-star]'));
   await tap(page, page.locator('#fdClose'));
 
-  // 3. Inicio: cando chega cada bus ás súas paradas
-  await pause(page, 3000);
+  // 3. Inicio: cando chega cada bus ás súas paradas (coa API de verdade pode tardar un pouco)
+  await page.locator('#favs .dep').first().waitFor({ timeout: 15000 }).catch(() => {}); await pause(page, 1500);
   const rows = await page.locator('#favs .dep').count();
   check('3. inicio: amosa chegadas ás dúas paradas', rows >= 2 && await page.locator('#favs .fav').count() === 2, `${rows} chegadas`);
   check('3. inicio: di que os datos son en directo', await page.getByText('En directo').isVisible());
