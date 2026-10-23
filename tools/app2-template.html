@@ -809,7 +809,7 @@ function busIcon(b) {
   const html = `<div class="busp${ghost ? ' ghost' : ''}${sel ? ' sel' : ''}" role="img" aria-label="${label}" title="${label}" style="${ghost ? `border-color:${r.color};color:var(--ink);background:var(--sheet)` : `background:${bg};color:${fg}`}">`
     + `${BUS_SVG}<b${ghost ? ` style="background:${bg};color:${fg}"` : ''}>${r.line}</b>${when ? `<span>${when}</span>` : ''}${more}</div>`;
   // rough width of the pill, to tell which ones would cover each other
-  b.pillW = 40 + 7.5 * (r.line.length + when.length) + (b.more ? 30 : 0);
+  b.pillW = 60 + 8.5 * r.line.length + 8.2 * when.length + (b.more ? 34 : 0);
   return L.divIcon({ className: '', iconSize: null, iconAnchor: [14, 15], html });
 }
 // Each bus marker is its own DOM layer, so: rebuild its icon only when it looks different,
@@ -849,7 +849,8 @@ function declutter() {
   list.sort((a, b) => (b.id === selectedBus) - (a.id === selectedBus) || a.info.min - b.info.min);
   const leads = [];
   for (const b of list) {
-    const p = map.latLngToLayerPoint(b.marker.getLatLng()), w = b.pillW || 80;
+    const el = b.onMap && b.marker.getElement() && b.marker.getElement().firstElementChild;
+    const p = map.latLngToLayerPoint(b.marker.getLatLng()), w = (el && el.offsetWidth + 4) || b.pillW || 80;
     const box = { x1: p.x - 14, x2: p.x - 14 + w, y1: p.y - 16, y2: p.y + 16 };
     const lead = leads.find(l => box.x1 < l.box.x2 && box.x2 > l.box.x1 && box.y1 < l.box.y2 && box.y2 > l.box.y1);
     if (lead) { b.hidden = true; lead.members.push(b); } else { b.hidden = false; leads.push({ b, box, members: [] }); }
