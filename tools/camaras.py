@@ -100,6 +100,7 @@ def main():
     cams = data if isinstance(data, list) else next((v for v in data.values() if isinstance(v, list)), [])
     print(f'cameras: {len(cams)}  (HTTP {st}, {len(body)} bytes)')
     print('fields:', sorted(cams[0].keys()) if cams else '-')
+    print('CAMLIST', json.dumps([{k: c[k] for k in ('id', 'nombre', 'lat', 'lon', 'url') if k in c} for c in cams], ensure_ascii=False))
     for c in cams[:3]: print('example:', json.dumps(c, ensure_ascii=False))
 
     def field(c, *names):
