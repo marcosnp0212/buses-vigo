@@ -43,8 +43,8 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 
 /* ---------- sheet: the home of the app, flat like the game's panels ---------- */
 .sheet { position: fixed; z-index: 1000; left: 0; right: 0; bottom: 0; max-height: min(60%, 600px); display: flex; flex-direction: column; background: var(--panel); border-top: 2.5px solid var(--ink); padding-bottom: env(safe-area-inset-bottom); transition: max-height 0.28s cubic-bezier(.3, .7, .2, 1); }
-.sheet.min { max-height: calc(118px + env(safe-area-inset-bottom)); }
-.sheet.min .sheet-body { visibility: hidden; }
+.sheet.min { max-height: none; }
+.sheet.min .sheet-body { display: none; }
 .grab { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 6px; border: 0; background: none; padding: 8px 22px 8px; text-align: left; }
 .grab::before { content: ""; align-self: center; width: 36px; height: 4px; border-radius: 2px; background: var(--rule); }
 .grab .hrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -256,7 +256,6 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
   .top { right: auto; left: 24px; width: 380px; top: 18px; }
   .ctl { top: 18px; right: 18px; }
   .sheet, #stopPanel { left: 16px; right: auto; top: 70px; bottom: auto; width: 400px; max-height: calc(100% - 86px); border: 2.5px solid var(--ink); border-radius: 22px; }
-  .sheet.min { max-height: 120px; }
   .grab { padding-top: 14px; }
   .grab::before { display: none; }
   .buscard { left: auto; right: 78px; width: 340px; top: 18px; }

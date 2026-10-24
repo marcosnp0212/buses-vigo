@@ -128,7 +128,7 @@ function renderHero() {
   const el = document.getElementById('hero');
   if (!hasTrip()) { heroBus = null; heroTrip = null; return; }
   const list = trips();
-  if (list === null) { el.innerHTML = results.has(prefs.origin) ? `<div class="empty">A túa parada non responde agora. Volvo tentalo nuns segundos.</div>` : `<div class="empty">Consultando a túa parada…</div>`; return; }
+  if (list === null) { el.innerHTML = results.has(prefs.origin) ? `<div class="empty">A parada non responde. Vólvese tentar en breve.</div>` : `<div class="empty">Consultando a túa parada…</div>`; return; }
   const t = list.find(x => x.reaches); heroTrip = t || null;
   if (!t) { el.innerHTML = `<div class="empty">Ningún bus vai cara a ${shortName(stopName(prefs.dest))} na próxima hora e media.</div>`; heroBus = null; renderNext(list); return; }
   const now = new Date();
@@ -225,7 +225,7 @@ function renderSearch() {
   else if (myPos) { list = [...STOPS.values()].sort((a, b) => hav([a.lat, a.lon], myPos) - hav([b.lat, b.lon], myPos)).slice(0, 8); hint = 'Preto de ti'; }
   else { list = prefs.favs.map(id => STOPS.get(id)); hint = list.length ? 'As túas paradas' : 'Escribe a rúa ou o número que aparece no poste da parada.'; }
   document.getElementById('edResults').innerHTML = (hint ? `<div class="hint">${hint}</div>` : '') + list.map(s => stopRow(s, false)).join('')
-    + (q && !list.length ? `<div class="empty">Ningunha parada se chama así. Proba con outra palabra ou co número do poste.</div>` : '');
+    + (q && !list.length ? `<div class="empty">Non hai paradas con ese nome. Proba co número do poste.</div>` : '');
 }
 function setTripStop(which, id) {
   if (which === 'origin') { if (id === prefs.dest) prefs.dest = prefs.origin; prefs.origin = id; }

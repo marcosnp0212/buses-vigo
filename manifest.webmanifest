@@ -1,7 +1,7 @@
 {
   "name": "Buses Vigo",
   "short_name": "Buses Vigo",
-  "description": "Cando chega o teu bus en Vigo, en tempo real.",
+  "description": "Tempos de chegada dos buses de Vitrasa en Vigo, en tempo real.",
   "lang": "gl",
   "start_url": "./",
   "scope": "./",

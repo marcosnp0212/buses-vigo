@@ -38,11 +38,11 @@ async function toggleAlert() {
   try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
   let remote = false;
   try { remote = !!heroTrip && await pushOn(heroTrip); } catch (e) {}
-  if (remote) toast('Avísote cando falten 5 minutos, aínda que peches a web');
-  else if (PUSH.url && iosBrowser()) toast('Para recibir o aviso coa web pechada, engádea á pantalla de inicio. Agora, déixaa aberta');
+  if (remote) toast('Aviso 5 minutos antes da chegada, tamén coa web pechada');
+  else if (PUSH.url && iosBrowser()) toast('Para o aviso coa web pechada, engade a web á pantalla de inicio. Mentres, mantena aberta');
   else {
     try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
-    toast('Avísote cando falten 5 minutos. Deixa a web aberta');
+    toast('Aviso 5 minutos antes da chegada. Mantén a web aberta');
   }
 }
 function checkAlert(t) {
@@ -51,6 +51,6 @@ function checkAlert(t) {
   const key = t.line + ":" + Math.round((Date.now() + t.min * 60000) / 300000);
   if (alerted === key) return; alerted = key;
   const msg = `O teu ${t.line} chega a ${shortName(stopName(prefs.origin))} en ${t.min} min`;
-  toast(msg); beep(); notify('Sae xa', msg);
+  toast(msg); beep(); notify('Bus a 5 minutos', msg);
   pushOff();   // already told: the server doesn't need to
 }

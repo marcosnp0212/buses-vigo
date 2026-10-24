@@ -1,8 +1,8 @@
 // ---------- my location ----------
 let myPos = null, myMarker = null;
 function locate() {
-  if (!navigator.geolocation) { toast('O teu navegador non pode darnos a túa localización'); return; }
-  toast('Buscando onde estás…');
+  if (!navigator.geolocation) { toast('Este navegador non permite obter a localización'); return; }
+  toast('Buscando a túa localización…');
   navigator.geolocation.getCurrentPosition(p => {
     myPos = [p.coords.latitude, p.coords.longitude];
     if (!myMarker) myMarker = L.circleMarker(myPos, { radius: 8, color: '#fff', weight: 3, fillColor: '#1b67a6', fillOpacity: 1 }).addTo(map);
