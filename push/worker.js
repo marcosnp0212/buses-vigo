@@ -65,7 +65,7 @@ async function check(env) {
       const e = est.filter(x => String(x.linea).trim().toUpperCase() === a.line && x.minutos >= 0 && x.minutos <= a.lead && x.metros >= 0).sort((p, q) => p.minutos - q.minutos)[0];
       if (!e) continue;
       const name = a.stop_name || `a parada ${a.stop}`;
-      const msg = { title: 'Sae xa', body: e.minutos <= 0 ? `O teu ${a.line} está chegando a ${name}` : `O teu ${a.line} chega a ${name} en ${e.minutos} min` };
+      const msg = { title: 'Bus a 5 minutos', body: e.minutos <= 0 ? `O teu ${a.line} está chegando a ${name}` : `O teu ${a.line} chega a ${name} en ${e.minutos} min` };
       await env.DB.prepare('UPDATE alerts SET message = ?2 WHERE id = ?1').bind(a.id, JSON.stringify({ ...msg, tag: 'bus-alert', url: `./?parada=${a.stop}` })).run();
       const status = await sendPush(a.endpoint, env);
       if (status === 404 || status === 410) await env.DB.prepare('DELETE FROM alerts WHERE id = ?1').bind(a.id).run();

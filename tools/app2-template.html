@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Buses Vigo</title>
-<meta name="description" content="Cando chega o teu bus en Vigo, en tempo real: as túas paradas dunha ollada, o mapa con todos os buses de Vitrasa e aviso antes de saír.">
+<meta name="description" content="Tempos de chegada dos buses de Vitrasa en Vigo, en tempo real.">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#172128" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
@@ -101,14 +101,14 @@
     <div class="ab-head"><h2>Buses Vigo</h2><button class="x" id="abClose" aria-label="Pechar">✕</button></div>
     <div class="seg" role="group" aria-label="Tema"><button class="btn" data-theme="auto">Automático</button><button class="btn" data-theme="light">Día</button><button class="btn" data-theme="dark">Noite</button></div>
     <div class="ab-body">
-      <p>Cando chega o teu bus, dunha ollada. Proxecto persoal, sen relación con Vitrasa nin co Concello de Vigo.</p>
+      <p>Tempos de chegada dos buses de Vitrasa en tempo real. Proxecto persoal, sen relación con Vitrasa nin co Concello de Vigo.</p>
       <h3>De onde saen os datos</h3>
       <p>Os tempos de chegada veñen da API aberta do Concello de Vigo. As liñas, as paradas e os horarios, do GTFS oficial de Vitrasa, que se actualiza cada semana.</p>
       <p>A posición de cada bus no mapa é unha estimación feita coa distancia que dá a API ata cada parada: non é o GPS do vehículo.</p>
       <p><a class="btn" href="comprobar.html">Comprobar coas cámaras de tráfico</a></p>
       <h3>Os teus datos</h3>
       <p>As túas paradas e preferencias gárdanse só neste dispositivo. Se activas os avisos coa web pechada, a parada e a liña envíanse ao servidor de avisos só para avisarte, e bórranse despois.</p>
-      <h3>Tela coma unha app</h3>
+      <h3>Instalar no móbil</h3>
       <p>No menú do navegador, escolle «Engadir á pantalla de inicio».</p>
       <p class="fine">Mapa © OpenStreetMap e OpenFreeMap.</p>
     </div>
@@ -864,7 +864,7 @@ function openCluster(b) {
   const pts = [b, ...b.members].map(x => x.marker.getLatLng()), bounds = L.latLngBounds(pts);
   const z = Math.min(map.getBoundsZoom(bounds.pad(0.6)), 18);
   if (z > map.getZoom()) map.flyToBounds(bounds.pad(0.6), { maxZoom: 18, duration: 0.5 });
-  else { selectArrival(b.id); toast(`${b.members.length + 1} buses no mesmo punto: tes todos na lista`); }
+  else { selectArrival(b.id); toast(`${b.members.length + 1} buses no mesmo punto (están na lista)`); }
 }
 function updateBuses(found, pollMs) {
   const seen = new Set();
@@ -1152,12 +1152,12 @@ function toggleFav(id) {
 }
 function renderHome() {
   const box = document.getElementById('favs'), has = prefs.favs.length > 0, trip = !!(prefs.origin || prefs.dest);
-  document.getElementById('sheetTitle').textContent = has || trip || prefs.welcomed ? 'As miñas paradas' : 'Os teus buses, dunha ollada';
+  document.getElementById('sheetTitle').textContent = has || trip || prefs.welcomed ? 'As miñas paradas' : 'Próximos buses';
   if (!has && !trip && !prefs.welcomed) {
-    box.innerHTML = `<div class="welcome"><p>Garda as paradas que usas e aquí verás cando chega cada bus, sen ter que buscalas.</p>
+    box.innerHTML = `<div class="welcome"><p>Garda as paradas que usas para ver aquí os próximos buses.</p>
       <button class="btn sig" id="wNear">${LOC}Paradas preto de min</button>
       <button class="btn" id="wFind">Buscar unha parada</button>
-      <button class="btn link" id="wMap">Agora non, só ver o mapa</button></div>`;
+      <button class="btn link" id="wMap">Ver só o mapa</button></div>`;
     box.querySelector('#wNear').onclick = () => { openFinder(); locate(); };
     box.querySelector('#wFind').onclick = () => openFinder();
     box.querySelector('#wMap').onclick = () => { prefs.welcomed = true; savePrefs(); setSheet(true); renderHome(); };
@@ -1241,7 +1241,7 @@ function renderFinder() {
   else if (myPos) { list = [...STOPS.values()].sort((a, b) => hav([a.lat, a.lon], myPos) - hav([b.lat, b.lon], myPos)).slice(0, 8); hint = 'Preto de ti'; }
   else { list = prefs.favs.map(id => STOPS.get(id)); hint = list.length ? 'As túas paradas' : 'Escribe a rúa ou o número que aparece no poste da parada.'; }
   document.getElementById('fdResults').innerHTML = (hint ? `<div class="hint">${hint}</div>` : '') + list.map(s => stopRow(s, true)).join('')
-    + (q && !list.length ? `<div class="empty">Ningunha parada se chama así. Proba con outra palabra ou co número do poste.</div>` : '');
+    + (q && !list.length ? `<div class="empty">Non hai paradas con ese nome. Proba co número do poste.</div>` : '');
 }
 function openFinder() {
   const el = document.getElementById('finder'), q = document.getElementById('fdSearch');

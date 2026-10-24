@@ -51,7 +51,7 @@ select { width: 100%; min-height: 48px; border: 2.5px solid var(--ink); border-r
 <body>
 <main>
   <header><a href="./" aria-label="Volver á app">←</a><h1>Comprobar coas cámaras</h1></header>
-  <p class="muted">A app non ten o GPS dos buses: calcula onde está cada un coa distancia que dá a API ata as paradas. Aquí comparas ese cálculo co que ve unha cámara de tráfico do Concello. Cando a app di que un bus está diante da cámara, mira a imaxe e responde.</p>
+  <p class="muted">A posición dos buses no mapa calcúlase coa distancia que dá a API ata cada parada. Esta páxina compárao coa imaxe dunha cámara de tráfico do Concello.</p>
 
   <select id="camSel" aria-label="Cámara"></select>
   <div class="cam" id="cam"><span class="muted">Cargando…</span></div>
@@ -119,7 +119,7 @@ $('camSel').onchange = () => { cam = cams.find(c => c.id === $('camSel').value);
 function showCam(fresh) {
   const box = $('cam'), url = cam.url + (cam.url.includes('?') ? '&' : '?') + '_=' + Date.now();
   if (imgOk === false) {
-    box.innerHTML = `<div class="fail"><p>O navegador non deixa ver a cámara dentro desta páxina (o Concello sérvea sen https).</p><a class="btn pri" href="${cam.url}" target="_blank" rel="noopener">Abrir a cámara</a><p class="muted">Ábrese noutra pestana: déixaa á beira e volve aquí para responder.</p></div>`;
+    box.innerHTML = `<div class="fail"><p>O navegador non deixa ver a cámara dentro desta páxina (o Concello sérvea sen https).</p><a class="btn pri" href="${cam.url}" target="_blank" rel="noopener">Abrir a cámara</a><p class="muted">Ábrese noutra pestana.</p></div>`;
     return;
   }
   const img = new Image();
@@ -160,7 +160,7 @@ setInterval(poll, 15000);
 const answered = new Set();
 function render() {
   const t = (Date.now() - polledAt) / 1000, list = seen.map(b => ({ ...b, now: b.dist - b.v * t })).sort((a, b) => Math.abs(a.now) - Math.abs(b.now));
-  if (!list.length) { $('buses').innerHTML = '<div class="empty">Ningún bus preto desta cámara agora. Proba con outra ou agarda un pouco.</div>'; return; }
+  if (!list.length) { $('buses').innerHTML = '<div class="empty">Ningún bus preto desta cámara agora.</div>'; return; }
   $('buses').innerHTML = list.slice(0, 8).map(b => {
     const inView = Math.abs(b.now) <= VIEW, secs = Math.round(Math.abs(b.now) / b.v);
     const when = inView ? `Debería verse agora (a ${Math.round(Math.abs(b.now))} m)` : b.now > 0 ? `Chega á cámara en ${secs < 90 ? secs + ' s' : Math.round(secs / 60) + ' min'} (${Math.round(b.now)} m)` : `Pasou hai ${secs} s`;
