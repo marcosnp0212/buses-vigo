@@ -1,0 +1,27 @@
+name: Precisión do mapa
+
+# Cada hora de día mira as paradas con máis liñas durante 12 min e mide, sen ninguén mirando, canto se equivoca
+# o mapa: o salto dos buses ao chegar datos novos, a diferenza entre paradas para o mesmo bus e o erro do «chega en».
+# O informe sae no resumo de cada execución (Actions → Precisión do mapa); o historial de 14 días gárdase en caché.
+on:
+  schedule:
+    - cron: '7 5-21 * * *'   # UTC: de 6-7 a 22-23 en Vigo
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['tools/precision.py', '.github/workflows/precision.yml']
+
+concurrency: { group: precision, cancel-in-progress: false }
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with: { path: precision, key: precision-${{ github.run_id }}, restore-keys: precision- }
+      - run: python3 tools/precision.py 12 30
+      - uses: actions/cache/save@v4
+        if: always()
+        with: { path: precision, key: precision-${{ github.run_id }} }
