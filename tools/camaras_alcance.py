@@ -1,14 +1,21 @@
 """Where do the Concello's camera images answer from? Asks check-host.net to fetch one from servers in several
 countries (Spain first), and also tries from here. Run in GitHub Actions (the "Cámaras" workflow)."""
-import json, time, urllib.request, socket
+import json, time, urllib.request, urllib.error, urllib.parse, socket
 
 URL = 'http://camaras.vigo.org/webcam/camv2.php?id=24'
 def get(u, t=30):
-    with urllib.request.urlopen(urllib.request.Request(u, headers={'Accept': 'application/json', 'User-Agent': 'buses-vigo'}), timeout=t) as r:
-        return json.loads(r.read())
+    for wait in (0, 10, 30, 60):
+        time.sleep(wait)
+        try:
+            with urllib.request.urlopen(urllib.request.Request(u, headers={'Accept': 'application/json', 'User-Agent': 'buses-vigo'}), timeout=t) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            if e.code != 429: raise
+            print('  429, retrying')
+    raise SystemExit('check-host keeps saying 429')
 
-nodes = get('https://check-host.net/nodes/hosts')['nodes']
-pick = [n for n, v in nodes.items() if v['location'][0].lower() in ('es', 'pt', 'fr', 'de', 'nl', 'it', 'gb')]
+nodes = get('https://check-host.net/nodes/hosts')['nodes']; time.sleep(5)
+pick = [n for n in ('es1.node.check-host.net', 'es2.node.check-host.net', 'pt1.node.check-host.net', 'de1.node.check-host.net') if n in nodes]
 print('nodes:', {n: nodes[n]['location'][:3] for n in pick})
 q = '&'.join('node=' + n for n in pick)
 req = get(f'https://check-host.net/check-http?host={urllib.parse.quote(URL, safe="")}&{q}')
