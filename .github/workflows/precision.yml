@@ -11,7 +11,9 @@ on:
     branches: ['claude/**']
     paths: ['tools/precision.py', '.github/workflows/precision.yml']
 
-concurrency: { group: precision, cancel-in-progress: false }
+concurrency:
+  group: precision
+  cancel-in-progress: false
 
 jobs:
   medir:
@@ -20,8 +22,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache/restore@v4
-        with: { path: precision, key: precision-${{ github.run_id }}, restore-keys: precision- }
+        with:
+          path: precision
+          key: precision-${{ github.run_id }}
+          restore-keys: precision-
       - run: python3 tools/precision.py 12 30
       - uses: actions/cache/save@v4
         if: always()
-        with: { path: precision, key: precision-${{ github.run_id }} }
+        with:
+          path: precision
+          key: precision-${{ github.run_id }}
