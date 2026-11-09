@@ -13,8 +13,8 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- data first: the app can't start without it; the rest of the page doesn't wait for fonts or the vector map -->
-<link rel="preload" href="data/net.json?v=963969b0b1" as="fetch" crossorigin>
-<link rel="preload" href="data/sched.json?v=963969b0b1" as="fetch" crossorigin>
+<link rel="preload" href="data/net.json?v=fc858739c5" as="fetch" crossorigin>
+<link rel="preload" href="data/sched.json?v=fc858739c5" as="fetch" crossorigin>
 <link rel="preconnect" href="https://unpkg.com">
 <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -383,7 +383,7 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
 // ---------- data (data/*.json, written by tools/assemble2.js) ----------
-const loadData = f => fetch(`data/${f}.json?v=963969b0b1`).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); });
+const loadData = f => fetch(`data/${f}.json?v=fc858739c5`).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); });
 let NET, SCHED;
 try { [NET, SCHED] = await Promise.all([loadData('net'), loadData('sched')]); }
 catch (e) { document.getElementById('favs').innerHTML = '<div class="empty">Non se puideron cargar as liñas. Comproba a túa conexión e recarga a páxina.</div>'; throw e; }
